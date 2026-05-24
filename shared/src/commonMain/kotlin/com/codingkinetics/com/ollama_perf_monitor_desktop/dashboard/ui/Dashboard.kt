@@ -18,13 +18,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.models.DashboardViewState
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.controller.DashboardController
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.domain.models.DashboardViewState
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.domain.DashboardViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
 @Composable
-fun DashboardView(viewModel: DashboardController) {
+fun DashboardView(viewModel: DashboardViewModel) {
     val uiState by viewModel.viewState.collectAsState()
 
     LaunchedEffect(uiState is DashboardViewState.ActiveJob) {
@@ -38,15 +38,21 @@ fun DashboardView(viewModel: DashboardController) {
         is DashboardViewState.Idle -> "System Ready. Infrastructure offline."
         is DashboardViewState.ActiveJob -> state.statusMessage
         is DashboardViewState.Error -> "FAILURE: ${state.errorMessage}"
+        is DashboardViewState.CompletedJob -> state.statusMessage
     }
 
     val currentMetricsContent = when (val state = uiState) {
         is DashboardViewState.ActiveJob -> state.metricsPanel
+        is DashboardViewState.CompletedJob -> state.metricsPanel
         is DashboardViewState.Error -> "Environment Failure:\ntmux target broken or crashed."
         else -> "System Offline - Transitioning to Idle state."
     }
 
     val currentGpuContent = when (val state = uiState) {
+        is DashboardViewState.CompletedJob -> {
+            println("Completed job data: ${state.completedData}")
+            state.completedData.toString()
+        }
         is DashboardViewState.ActiveJob -> state.gpuPanel
         is DashboardViewState.Error -> "Diagnostics:\ntmux: ${state.tmuxPath}\nollama: ${state.ollamaPath}"
         else -> "System Offline - Transitioning to Idle state."
@@ -54,6 +60,7 @@ fun DashboardView(viewModel: DashboardController) {
 
     val currentEssayContent = when (val state = uiState) {
         is DashboardViewState.ActiveJob -> state.essayText
+        is DashboardViewState.CompletedJob -> state.essayText
         else -> ""
     }
 

@@ -1,4 +1,4 @@
-package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.models
+package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.domain.models
 
 import androidx.compose.runtime.Immutable
 
@@ -18,4 +18,12 @@ sealed interface DashboardViewState {
         val btopPath: String,
         val ollamaPath: String,
     ) : DashboardViewState
+
+    data class CompletedJob(
+        val statusMessage: String,
+        val metricsPanel: String,
+        val gpuPanel: String,
+        val essayText: String,
+        val completedData: OllamaResponseCompletedData,
+    ): DashboardViewState
 }
