@@ -1,6 +1,7 @@
-package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.domain.models
+package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.model
 
 import androidx.compose.runtime.Immutable
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaResponseCompletedData
 
 @Immutable
 sealed interface DashboardViewState {

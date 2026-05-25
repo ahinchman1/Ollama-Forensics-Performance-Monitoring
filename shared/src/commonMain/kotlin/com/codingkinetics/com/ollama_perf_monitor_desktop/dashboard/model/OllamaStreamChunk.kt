@@ -1,4 +1,4 @@
-package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.domain.models
+package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

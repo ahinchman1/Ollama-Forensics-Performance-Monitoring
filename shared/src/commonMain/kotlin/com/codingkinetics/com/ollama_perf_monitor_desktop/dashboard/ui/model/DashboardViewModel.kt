@@ -1,14 +1,14 @@
-package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.domain
+package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.model
 
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.domain.models.DashboardViewState
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.domain.models.OllamaResponseCompletedData
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollama.OllamaJobOrchestrator
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaResponseCompletedData
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
-import com.codingkinetics.com.ollama_perf_monitor_desktop.util.btopExecutable
-import com.codingkinetics.com.ollama_perf_monitor_desktop.util.ollamaExecutable
-import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxExecutable
-import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.btopExecutable
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollamaExecutable
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.tmuxExecutable
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.tmuxSessionName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,9 +41,10 @@ class DashboardViewModel(
                 withContext(contextPool.ioDispatcher) {
                     when (val checkDep = ollamaJobOrchestrator.checkMonitoringToolDependency()) {
                         is Result.Success -> {
-                            ollamaJobOrchestrator.startTmuxDashboard()
-                            ollamaJobOrchestrator.startOllamaServer()
+                            ollamaJobOrchestrator.startDashboard()
+                            ollamaJobOrchestrator.startServer()
                         }
+
                         is Result.Failure -> _viewState.update {
                             DashboardViewState.Error(
                                 checkDep.exception.message ?: "Unknown error",
@@ -121,11 +122,11 @@ class DashboardViewModel(
 
     suspend fun synchronousRefresh() {
         val metrics = withContext(contextPool.ioDispatcher) {
-            ollamaJobOrchestrator.captureTmuxPane("$tmuxSessionName:0.0")
+            ollamaJobOrchestrator.captureMetricsData("${tmuxSessionName}:0.0")
         }
 
         val gpu = withContext(contextPool.ioDispatcher) {
-            ollamaJobOrchestrator.captureTmuxPane("$tmuxSessionName:0.1")
+            ollamaJobOrchestrator.captureMetricsData("${tmuxSessionName}:0.1")
         }
 
         _viewState.update { currentState ->

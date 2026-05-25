@@ -18,8 +18,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.domain.models.DashboardViewState
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.domain.DashboardViewModel
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.model.DashboardViewState
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.model.DashboardViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
