@@ -6,6 +6,8 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextP
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.btopExecutable
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.nanosToSeconds
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollamaExecutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.tmuxExecutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.tmuxSessionName
@@ -175,21 +177,43 @@ class DashboardViewModel(
         }
     }
 
-    private fun onAiJobComplete(finalData: OllamaResponseCompletedData) =
-        scope.launch(contextPool.mainImmediateDispatcher) {
-            _viewState.update { currentState ->
-                (if (currentState is DashboardViewState.ActiveJob) {
-                    println("Ollama essay generation complete. Monitoring panels active.")
-                    DashboardViewState.CompletedJob(
-                        currentState.statusMessage,
-                        currentState.metricsPanel,
-                        currentState.gpuPanel,
-                        currentState.essayText,
-                        finalData,
-                    )
-                } else currentState)
-            }
+    private fun onAiJobComplete(metrics: PerformanceMetrics) {
+        val processingSpeed = "${String.format("%.2fs", metrics.promptEvaluationDurationNanos.nanosToSeconds())}"
+        val generationSpeed = "${String.format("%.2fs", metrics.generationDurationNanos.nanosToSeconds())}"
+
+        val processedMetricsLayout = """
+            ================================================================================
+              OLLAMA WORKLOAD DIAGNOSTICS // MODEL: $ollamaModel
+            ================================================================================
+              [ EXECUTIVE VERDICT ]
+              STATUS: SUCCESS (${metrics.doneReason})
+              TOTAL WALL TIME: ${metrics.formattedTotalDuration}
+              
+              [ ENGINE THROUGHPUT ]
+              PHASE 1: Ingestion (Reading Prompt)
+              ├── Tokens Evaluated: ${metrics.promptTokensCount}
+              └── Processing Speed: ${metrics.formattedIngestionSpeed} [Time: $processingSpeed]
+            
+              PHASE 2: Generation (Writing Response)
+              ├── Tokens Streamed:  ${metrics.generatedTokensCount}
+              └── Generation Speed: ${metrics.formattedGenerationSpeed} [Time: $generationSpeed]
+            
+              [ HARDWARE FORENSICS SUMMARY ]
+              PROCESSOR CPU LOAD: ${metrics.osMetrics.temperature}°C Avg Total Package
+              └── Ollama Active CPU Strain: ${metrics.osMetrics.processCpuConsumption}%
+            ================================================================================
+        """.trimIndent()
+
+        _viewState.update { currentState ->
+            if (currentState is DashboardViewState.ActiveJob) {
+                currentState.copy(
+                    statusMessage = "Job finished successfully.",
+                    metricsPanel = processedMetricsLayout,
+                    gpuPanel = metrics.osMetrics.cpuTelemetry,
+                )
+            } else currentState
         }
+    }
 
     companion object {
         val prompt = """

@@ -72,3 +72,7 @@ internal fun commandExists(command: String): Boolean {
         false
     }
 }
+
+internal fun List<Int>.roverage(): Double = if (isEmpty()) 0.0 else this.sum().toDouble() / this.size
+
+internal fun Long.nanosToSeconds(): Double = this / 1_000_000_000.0

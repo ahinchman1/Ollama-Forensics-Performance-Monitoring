@@ -1,13 +1,26 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard
 
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.BtopMetrics
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.Core
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuSnapshotData
+
 interface BtopMetricsCollector {
     fun captureTmuxPane(targetPane: String = "$tmuxSessionName:0.0"): String
     fun startTmuxDashboard()
     fun stopTmuxDashboard()
-    fun parseBtopData(): Map<String, String>
+    fun parseBtopData(): BtopMetrics
 }
 
 class BtopMetricsCollectorImpl: BtopMetricsCollector {
+
+    private val uiBorderRegex = Regex("[│┤┐└┴┬├─┼┘┌]")
+
+    // Regex to pluck core patterns like "C0 96% 81°C" or "C12 8% 75°C"
+    private val coreRegex = Regex("""C(\d+)\s+\d+%\s+(\d+)°C""")
+
+    // Regex to isolate the specific line tracking the ollama process metrics
+    // i.e. target: "39408 ollama  aman+  2.4G ⣤⣤⣤⣤⣤ 49.4"
+    private val ollamaProcessRegex = Regex("""\d+\s+ollama\s+\S+\s+\S+\s+[^0-9]*(\d+\.\d+)""")
 
     override fun captureTmuxPane(targetPane: String): String {
         return try {
@@ -79,26 +92,68 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
         runCommandIgnoringErrors(tmuxExecutable, "kill-session", "-t", tmuxSessionName)
     }
 
-    override fun parseBtopData(): Map<String, String> {
+    override fun parseBtopData(): BtopMetrics {
         val rawText = captureTmuxPane()
-        val metrics = mutableMapOf<String, String>()
+        val cleanText = rawText.sanitizeUIBorders()
+        val lines = cleanText.lines()
 
-        // Clean up character noise from btop boxes so we only evaluate standard text/numbers
-        val cleanText = rawText.replace(Regex("[│┤┐└┴┬├─┼┘┌]"), " ")
+        // Extract hardware states cleanly via a dedicated calculation holder
+        val cpuStats = parseGlobalCPUTempAndLoad(lines)
+        val totalThreads = extractSystemStatesFromFallbackScanners(lines)
 
-        // Simple line-by-line scanning for keyword positions
-        cleanText.lines().forEach { line ->
-            when {
-                line.contains("Cpu:", ignoreCase = true) -> {
-                    metrics["cpu_usage"] = line.substringAfter("Cpu:").trim().split(" ").firstOrNull() ?: ""
-                }
-                line.contains("Mem:", ignoreCase = true) -> {
-                    metrics["mem_usage"] = line.substringAfter("Mem:").trim().split(" ").firstOrNull() ?: ""
+        return BtopMetrics(
+            cores = cpuStats.cores.sortedBy { it.name.substringAfter(" ").toIntOrNull() ?: 0 },
+            temperature = if (cpuStats.globalTemperature == 0 && cpuStats.cores.isNotEmpty()) {
+                cpuStats.cores.map { it.temperature }.roverage().toInt()
+            } else {
+                cpuStats.globalTemperature
+            },
+            processCpuConsumption = cpuStats.processCpu,
+            cpuTelemetry = cleanText,
+            threadCount = totalThreads
+        )
+    }
+
+    private fun parseGlobalCPUTempAndLoad(lines: List<String>): CpuSnapshotData {
+        var globalTemperature = 0
+        var processCpu = 0L
+        val coresList = mutableListOf<Core>()
+
+        lines.forEach { line ->
+            if (line.contains("CPU") && line.contains("°C")) {
+                globalTemperature = line.substringAfter("°C")
+                    .substringBeforeLast("°C")
+                    .trim()
+                    .split(" ")
+                    .lastOrNull()
+                    ?.replace(Regex("[^0-9]"), "")
+                    ?.toIntOrNull() ?: 0
+            }
+
+            coreRegex.findAll(line).forEach { match ->
+                val coreNumber = match.groupValues[1]
+                val coreTemp = match.groupValues[2].toIntOrNull() ?: 0
+                coresList.add(Core(name = "Core $coreNumber", temperature = coreTemp))
+            }
+
+            if (line.contains("ollama")) {
+                ollamaProcessRegex.find(line)?.let { match ->
+                    processCpu = match.groupValues[1].toDoubleOrNull()?.toLong() ?: 0L
                 }
             }
         }
-        return metrics
+
+        return CpuSnapshotData(globalTemperature, processCpu, coresList)
     }
+
+    private fun extractSystemStatesFromFallbackScanners(lines: List<String>): String {
+        return lines.find { line -> line.contains("signals") || line.contains("/") }
+            ?.substringAfterLast(" ")
+            ?.substringBefore("/")
+            ?.trim() ?: "0"
+    }
+
+    private fun String.sanitizeUIBorders(): String = this.replace(uiBorderRegex, " ")
 
     private fun gpuMonitoringCommand(): String {
         return when {

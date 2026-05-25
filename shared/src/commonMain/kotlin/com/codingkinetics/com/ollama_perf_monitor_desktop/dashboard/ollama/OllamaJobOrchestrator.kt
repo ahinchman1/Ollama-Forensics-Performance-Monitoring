@@ -3,8 +3,10 @@ package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollama
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.BtopMetricsCollector
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.BtopMetricsCollectorImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.commandExists
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.mapper.mapOllamaResponseToDomain
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaResponseCompletedData
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.runCommandIgnoringErrors
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.tmuxExecutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.tmuxSessionName
@@ -32,22 +34,28 @@ class OllamaJobOrchestrator(
         model: String,
         prompt: String,
         onChunk: (String) -> Unit,
-        onAiJobCompleteUpdateGPUPanel: (OllamaResponseCompletedData) -> Unit,
+        // FIX: Update this signature to emit the clean PerformanceMetrics domain model
+        onAiJobCompleteUpdateGPUPanel: (PerformanceMetrics) -> Unit,
     ): Result<Unit> =
         jobRunner.runOllamaEssayJob(model, prompt, onChunk) { data: OllamaResponseCompletedData ->
-            onAiJobCompleteUpdateGPUPanel(data)
             println("------ Ollama Response Completed Data ----")
             println(data.toString())
+
+            // 1. Capture the raw string layout from the pane
             val rawStats = btopMetrics.captureTmuxPane()
             println("------BTOP Metrics Captured ----")
-            println(rawStats.toString())
-            // logAnalyzer.analyzeSnapshot(rawStats)
+            println(rawStats)
 
-            // TODO finish mapping out OllamaResponse and find a way to render results
-            val results=
+            // 2. Parse the raw string into structured BtopMetrics
+            val parsedBtopMetrics = btopMetrics.parseBtopData()
 
+            val finalMetrics = mapOllamaResponseToDomain(
+                responsePayload = data,
+                btopSnapshot = parsedBtopMetrics,
+            )
 
             btopMetrics.stopTmuxDashboard()
+            onAiJobCompleteUpdateGPUPanel(finalMetrics)
         }
 
     internal fun startDashboard() {

@@ -1,5 +1,8 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model
 
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.nanosToSeconds
+import java.util.Locale
+
 data class PerformanceMetrics(
     val osMetrics: BtopMetrics,
     val loadDurationNanos: Long,              // Keep raw for precise calculations/sorting
@@ -12,24 +15,33 @@ data class PerformanceMetrics(
     val generationDurationNanos: Long,        // Translates from 'tabDuration'
     val hallucinationScore: String = ""       // Ready for your future Ragas integration
 ) {
-    // Computed properties handle the presentation layer dynamically
+// --- CORE NUMERIC TELEMETRY MATH ---
+
+    /** Velocity of token generation (tokens/sec) */
     val tokensPerSecond: Double
         get() = if (generationDurationNanos > 0) {
-            generatedTokensCount.toDouble() / (generationDurationNanos / 1_000_000_000.0)
+            generatedTokensCount.toDouble() / generationDurationNanos.nanosToSeconds()
+        } else 0.0
+
+    /** Velocity of prompt ingestion (tokens/sec) */
+    val promptIngestionSpeed: Double
+        get() = if (promptEvaluationDurationNanos > 0) {
+            promptTokensCount.toDouble() / promptEvaluationDurationNanos.nanosToSeconds()
         } else 0.0
 
     val formattedGenerationSpeed: String
-        get() = String.format("%.2f t/s", tokensPerSecond)
+        get() = String.format(Locale.US, "%.2f t/s", tokensPerSecond)
+
+    val formattedIngestionSpeed: String
+        get() = String.format(Locale.US, "%.2f t/s", promptIngestionSpeed)
+
+    val formattedLoadDuration: String
+        get() = String.format(Locale.US, "%.2fs", loadDurationNanos.nanosToSeconds())
+
+    val formattedTotalDuration: String
+        get() = String.format(Locale.US, "%.2fs", totalDurationNanos.nanosToSeconds())
+
 }
-
-val PerformanceMetrics.calculatedTokensPerSecond: Double
-    get() = if (timeSpentGeneratingResponseTokens > 0) {
-        tokensGenerated.toDouble() / timeSpentGeneratingResponseTokens.nanosToSeconds()
-    } else {
-        0.0
-    }
-
-
 
 class BtopMetrics(
     val cores: List<Core>,
