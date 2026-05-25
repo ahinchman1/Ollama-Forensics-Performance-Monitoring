@@ -73,7 +73,7 @@ class DashboardViewModel(
                         model = ollamaModel,
                         prompt = prompt,
                         onChunk = updateText { onEssayChunkReceived(it) },
-                        onAiJobComplete = { data -> onAiJobComplete(data) },
+                        onAiJobCompleteUpdateGPUPanel = { data -> onAiJobComplete(data) },
                     )
                 }
 
@@ -122,11 +122,11 @@ class DashboardViewModel(
 
     suspend fun synchronousRefresh() {
         val metrics = withContext(contextPool.ioDispatcher) {
-            ollamaJobOrchestrator.captureMetricsData("${tmuxSessionName}:0.0")
+            ollamaJobOrchestrator.captureTmuxPane("${tmuxSessionName}:0.0")
         }
 
         val gpu = withContext(contextPool.ioDispatcher) {
-            ollamaJobOrchestrator.captureMetricsData("${tmuxSessionName}:0.1")
+            ollamaJobOrchestrator.captureTmuxPane("${tmuxSessionName}:0.1")
         }
 
         _viewState.update { currentState ->

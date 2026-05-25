@@ -5,8 +5,6 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.Ollama
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollamaExecutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.runCommandIgnoringErrors
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.tmuxExecutable
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.tmuxSessionName
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.withCliPath
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -178,7 +176,6 @@ class OllamaJobRunnerImpl(): OllamaJobRunner {
     }
 
     override fun cleanupRuntimeResources() {
-        runCommandIgnoringErrors(tmuxExecutable, "kill-session", "-t", tmuxSessionName)
         serverProcess?.destroyForcibly()
         serverProcess = null
     }

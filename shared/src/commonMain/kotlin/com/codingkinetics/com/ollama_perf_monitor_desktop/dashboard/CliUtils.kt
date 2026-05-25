@@ -56,3 +56,19 @@ internal fun runCommandIgnoringErrors(vararg command: String) {
         println("Ignoring error running command: ${command.joinToString(" ")}. Cause: ${e.message}")
     }
 }
+
+internal fun commandExists(command: String): Boolean {
+    val executable = resolveExecutable(command)
+    if (File(executable).isAbsolute && File(executable).exists()) {
+        return true
+    }
+
+    return try {
+        val process = ProcessBuilder("bash", "-c", "command -v $command")
+            .withCliPath()
+            .start()
+        process.waitFor(1, TimeUnit.SECONDS) && process.exitValue() == 0
+    } catch (_: Exception) {
+        false
+    }
+}
