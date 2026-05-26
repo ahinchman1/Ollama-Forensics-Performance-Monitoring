@@ -10,6 +10,7 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.Perfor
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.runCommandIgnoringErrors
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.tmuxExecutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.tmuxSessionName
+import kotlin.toString
 
 class OllamaJobOrchestrator(
     val jobRunner: OllamaJobRunner = OllamaJobRunnerImpl(),
@@ -30,33 +31,46 @@ class OllamaJobOrchestrator(
 
     fun startServer() = jobRunner.startOllamaServer()
 
-    internal fun runOllamaEssayJob(
+    internal suspend fun runOllamaEssayJob(
         model: String,
         prompt: String,
         onChunk: (String) -> Unit,
-        // FIX: Update this signature to emit the clean PerformanceMetrics domain model
-        onAiJobCompleteUpdateGPUPanel: (PerformanceMetrics) -> Unit,
-    ): Result<Unit> =
-        jobRunner.runOllamaEssayJob(model, prompt, onChunk) { data: OllamaResponseCompletedData ->
-            println("------ Ollama Response Completed Data ----")
-            println(data.toString())
-
-            // 1. Capture the raw string layout from the pane
-            val rawStats = btopMetrics.captureTmuxPane()
-            println("------BTOP Metrics Captured ----")
-            println(rawStats)
-
-            // 2. Parse the raw string into structured BtopMetrics
-            val parsedBtopMetrics = btopMetrics.parseBtopData()
-
-            val finalMetrics = mapOllamaResponseToDomain(
-                responsePayload = data,
-                btopSnapshot = parsedBtopMetrics,
-            )
-
-            btopMetrics.stopTmuxDashboard()
-            onAiJobCompleteUpdateGPUPanel(finalMetrics)
+    ): Result<PerformanceMetrics> = when (val ollamaData = jobRunner.runOllamaEssayJob(model, prompt, onChunk)) {
+        is Result.Success -> {
+            logCompletedStats(ollamaData.data)
+            getPerformanceData(ollamaData.data)
         }
+        is Result.Failure -> {
+            ollamaData
+        }
+    }
+
+    private fun getPerformanceData(data: OllamaResponseCompletedData): Result<PerformanceMetrics> =
+        when (val parsedBtopMetrics = btopMetrics.parseBtopData()) {
+            is Result.Success -> {
+                val finalMetrics = mapOllamaResponseToDomain(
+                    responsePayload = data,
+                    btopSnapshot = parsedBtopMetrics.data,
+                )
+
+                btopMetrics.stopTmuxDashboard()
+                println("Final Metrics: ${finalMetrics}")
+                finalMetrics
+            }
+            is Result.Failure -> {
+                parsedBtopMetrics
+            }
+        }
+
+    private fun  logCompletedStats(data: OllamaResponseCompletedData) {
+        println("------ Ollama Response Completed Data ----")
+        println(data.toString())
+
+        val rawStats = btopMetrics.captureTmuxPane()
+        println("------BTOP Metrics Captured ----")
+        println(rawStats)
+
+    }
 
     internal fun startDashboard() {
         runCommandIgnoringErrors(tmuxExecutable, "kill-session", "-t", tmuxSessionName)

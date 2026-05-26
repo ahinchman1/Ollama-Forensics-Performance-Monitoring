@@ -3,24 +3,22 @@ package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.BtopMetrics
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.Core
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuSnapshotData
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 
 interface BtopMetricsCollector {
     fun captureTmuxPane(targetPane: String = "$tmuxSessionName:0.0"): String
     fun startTmuxDashboard()
     fun stopTmuxDashboard()
-    fun parseBtopData(): BtopMetrics
+    fun parseBtopData(): Result<BtopMetrics>
 }
 
 class BtopMetricsCollectorImpl: BtopMetricsCollector {
 
     private val uiBorderRegex = Regex("[│┤┐└┴┬├─┼┘┌]")
-
-    // Regex to pluck core patterns like "C0 96% 81°C" or "C12 8% 75°C"
     private val coreRegex = Regex("""C(\d+)\s+\d+%\s+(\d+)°C""")
-
-    // Regex to isolate the specific line tracking the ollama process metrics
-    // i.e. target: "39408 ollama  aman+  2.4G ⣤⣤⣤⣤⣤ 49.4"
-    private val ollamaProcessRegex = Regex("""\d+\s+ollama\s+\S+\s+\S+\s+[^0-9]*(\d+\.\d+)""")
+    private val globalCpuTempRegex = Regex("""CPU\s+.*?\s+(\d+)°C""")
+    private val ollamaProcessRegex = Regex("""\d+\s+ollama\s+\S+\s+\S+\s+.*?(\d+\.\d+)\s*""")
+    private val threadRegex = Regex("""(\d+)/(\d+)""")
 
     override fun captureTmuxPane(targetPane: String): String {
         return try {
@@ -62,8 +60,8 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
             val splitResult = ProcessBuilder(
                 tmuxExecutable,
                 "split-window",
-                "-h",       // horizontal-split
-                "-p", "65", // takes 65 percent of the window
+                "-h",
+                "-p", "65",
                 "-t",
                 "${tmuxSessionName}:0",
                 "bash",
@@ -84,7 +82,7 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
                 .start()
                 .waitFor()
         } catch (e: Exception) {
-            throw IllegalStateException("Failed to configure tmux dashboard layout: ${e.message}", e)
+            println("Failed to configure tmux dashboard layout: ${e.message}")
         }
     }
 
@@ -92,26 +90,43 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
         runCommandIgnoringErrors(tmuxExecutable, "kill-session", "-t", tmuxSessionName)
     }
 
-    override fun parseBtopData(): BtopMetrics {
+    override fun parseBtopData(): Result<BtopMetrics> {
         val rawText = captureTmuxPane()
-        val cleanText = rawText.sanitizeUIBorders()
-        val lines = cleanText.lines()
 
-        // Extract hardware states cleanly via a dedicated calculation holder
-        val cpuStats = parseGlobalCPUTempAndLoad(lines)
-        val totalThreads = extractSystemStatesFromFallbackScanners(lines)
+        println("DEBUG: Raw Text received from Tmux: '$rawText'")
 
-        return BtopMetrics(
-            cores = cpuStats.cores.sortedBy { it.name.substringAfter(" ").toIntOrNull() ?: 0 },
-            temperature = if (cpuStats.globalTemperature == 0 && cpuStats.cores.isNotEmpty()) {
-                cpuStats.cores.map { it.temperature }.roverage().toInt()
-            } else {
-                cpuStats.globalTemperature
-            },
-            processCpuConsumption = cpuStats.processCpu,
-            cpuTelemetry = cleanText,
-            threadCount = totalThreads
-        )
+        if (rawText.startsWith("Pane error")) {
+            println("CRITICAL: Tmux pane capture failed at the OS level!")
+        }
+
+        return parseBtopDataFromString(rawText)
+    }
+
+    internal fun parseBtopDataFromString(rawText: String): Result<BtopMetrics> {
+        try {
+            val cleanText = rawText.sanitizeUIBorders()
+            val lines = cleanText.lines()
+
+            val cpuStats = parseGlobalCPUTempAndLoad(lines)
+            val totalThreads = extractSystemStatesFromFallbackScanners(lines)
+
+            val metrics =  BtopMetrics(
+                cores = cpuStats.cores.sortedBy { it.name.substringAfter(" ").toIntOrNull() ?: 0 },
+                temperature = if (cpuStats.globalTemperature == 0 && cpuStats.cores.isNotEmpty()) {
+                    cpuStats.cores.map { it.temperature }.roverage().toInt()
+                } else {
+                    cpuStats.globalTemperature
+                },
+                processCpuConsumption = cpuStats.processCpu,
+                cpuTelemetry = cleanText,
+                threadCount = totalThreads,
+            )
+            println("Parsed metrics: $metrics")
+            return Result.Success(metrics)
+        } catch (e: Exception) {
+            println("Unable to get BtopMetrics. Cause of error: $e")
+            return Result.Failure(e)
+        }
     }
 
     private fun parseGlobalCPUTempAndLoad(lines: List<String>): CpuSnapshotData {
@@ -119,41 +134,57 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
         var processCpu = 0L
         val coresList = mutableListOf<Core>()
 
-        lines.forEach { line ->
-            if (line.contains("CPU") && line.contains("°C")) {
-                globalTemperature = line.substringAfter("°C")
-                    .substringBeforeLast("°C")
-                    .trim()
-                    .split(" ")
-                    .lastOrNull()
-                    ?.replace(Regex("[^0-9]"), "")
-                    ?.toIntOrNull() ?: 0
-            }
+        println("DEBUG: Total lines sent to parser: ${lines.size}")
 
-            coreRegex.findAll(line).forEach { match ->
-                val coreNumber = match.groupValues[1]
-                val coreTemp = match.groupValues[2].toIntOrNull() ?: 0
-                coresList.add(Core(name = "Core $coreNumber", temperature = coreTemp))
-            }
+        try {
+            lines.forEach { line ->
+                if (line.contains("CPU")) {
+                    globalCpuTempRegex.find(line)?.let { match ->
+                        globalTemperature = match.groupValues[1].toIntOrNull() ?: 0
+                    }
+                }
 
-            if (line.contains("ollama")) {
-                ollamaProcessRegex.find(line)?.let { match ->
-                    processCpu = match.groupValues[1].toDoubleOrNull()?.toLong() ?: 0L
+                coreRegex.findAll(line).forEach { match ->
+                    val coreNumber = match.groupValues[1]
+                    val coreTemp = match.groupValues[2].toIntOrNull() ?: 0
+                    coresList.add(Core(name = "Core $coreNumber", temperature = coreTemp))
+                }
+
+                if (line.contains("ollama")) {
+                    ollamaProcessRegex.find(line)?.let { match ->
+                        processCpu = match.groupValues[1].toDoubleOrNull()?.toLong() ?: 0L
+                    }
                 }
             }
+        } catch(e: Exception) {
+            println("Unable to parse global CPU temp and average loads. Cause: $e")
         }
-
         return CpuSnapshotData(globalTemperature, processCpu, coresList)
     }
 
-    private fun extractSystemStatesFromFallbackScanners(lines: List<String>): String {
-        return lines.find { line -> line.contains("signals") || line.contains("/") }
-            ?.substringAfterLast(" ")
-            ?.substringBefore("/")
-            ?.trim() ?: "0"
+    private fun extractSystemStatesFromFallbackScanners(lines: List<String>): Int {
+        val statusLine = lines.find { line ->
+            line.contains("/") && (line.contains("signals") || line.contains("info"))
+        } ?: return 0
+
+        val match = threadRegex.find(statusLine)
+
+        return match?.groupValues?.get(2)?.toIntOrNull() ?: 0
     }
 
-    private fun String.sanitizeUIBorders(): String = this.replace(uiBorderRegex, " ")
+    private fun String.sanitizeUIBorders(): String = try {
+        this.replace(uiBorderRegex, " ")
+    } catch (e: Exception) {
+        println("Border sanitizing failed. Cause: ${e.message}")
+        ""
+    }
+
+    private fun List<Int>.roverage(): Double = try {
+        if (isEmpty()) 0.0 else this.sum().toDouble() / this.size
+    } catch(e: Exception) {
+        println("roverage() failed: Cause: $e")
+        0.0
+    }
 
     private fun gpuMonitoringCommand(): String {
         return when {

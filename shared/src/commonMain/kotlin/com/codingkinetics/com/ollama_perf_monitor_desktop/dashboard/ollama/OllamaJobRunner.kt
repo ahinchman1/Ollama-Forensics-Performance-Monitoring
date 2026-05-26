@@ -17,12 +17,11 @@ interface OllamaJobRunner {
 
     fun startOllamaServer()
 
-    fun runOllamaEssayJob(
+    suspend fun runOllamaEssayJob(
         model: String,
         prompt: String,
         onChunk: (String) -> Unit,
-        onAiJobComplete: (OllamaResponseCompletedData) -> Unit = {},
-    ): Result<Unit>
+    ): Result<OllamaResponseCompletedData>
 
     fun cleanupRuntimeResources()
 }
@@ -36,6 +35,7 @@ class OllamaJobRunnerImpl(): OllamaJobRunner {
     }
 
     private val ollamaBaseUrl = "http://127.0.0.1:11434"
+    private val ollamaStreamingEndpointUrl = URL("$ollamaBaseUrl/api/generate")
 
     override fun startOllamaServer() = try {
             runCommandIgnoringErrors("pkill", "-f", "ollama serve")
@@ -96,55 +96,62 @@ class OllamaJobRunnerImpl(): OllamaJobRunner {
         )
     }
 
-    override fun runOllamaEssayJob(
+    override suspend fun runOllamaEssayJob(
         model: String,
         prompt: String,
         onChunk: (String) -> Unit,
-        onAiJobComplete: (OllamaResponseCompletedData) -> Unit,
-    ): Result<Unit> = try {
-        val ollamaStreamingEndpointUrl = URL("$ollamaBaseUrl/api/generate")
-        val connection = ollamaStreamingEndpointUrl.openConnection() as HttpURLConnection
+    ): Result<OllamaResponseCompletedData> {
+        var connection: HttpURLConnection? = null
+        return try {
+            connection = ollamaStreamingEndpointUrl.openConnection() as HttpURLConnection
 
-        connection.requestMethod = "POST"
-        connection.setRequestProperty("Content-Type", "application/json")
-        connection.doOutput = true
-        connection.connectTimeout = 5000
-        connection.readTimeout = 60000
+            connection.requestMethod = "POST"
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.doOutput = true
+            connection.connectTimeout = 5000
+            connection.readTimeout = 60000
 
-        connection.setChunkedStreamingMode(0)
+            connection.setChunkedStreamingMode(0)
 
-        val escapedPrompt = prompt.replace("\\", "\\\\")
-            .replace("\"", "\\\"")
-            .replace("\n", "\\n")
+            val escapedPrompt = prompt.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
 
-        val jsonPayload = """
-        {
-          "model": "$model",
-          "prompt": "$escapedPrompt",
-          "stream": true
+            val jsonPayload = """
+                {
+                  "model": "$model",
+                  "prompt": "$escapedPrompt",
+                  "stream": true
+                }
+                """.trimIndent()
+
+            // Fire the payload into the network socket
+            OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { writer ->
+                writer.write(jsonPayload)
+                writer.flush()
+            }
+
+            val responseCode = connection.responseCode
+            if (responseCode != 200) {
+                val errorText = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Unknown Error"
+                error("Ollama REST API returned HTTP $responseCode: $errorText")
+            }
+
+            var finalResultData: OllamaResponseCompletedData? = null
+
+            streamRawJsonChunks(connection, onChunk) { completedData ->
+                finalResultData = completedData
+            }
+
+            finalResultData?.let {
+                Result.Success(it)
+            } ?: Result.Failure(IllegalStateException("Stream finished without generating completion records."))
+        } catch (e: Exception) {
+            println("Error running Ollama job: ${e.message}")
+            Result.Failure(e)
+        } finally {
+            connection?.disconnect()
         }
-        """.trimIndent()
-
-        // Fire the payload into the network socket
-        OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { writer ->
-            writer.write(jsonPayload)
-            writer.flush()
-        }
-
-        val responseCode = connection.responseCode
-        if (responseCode != 200) {
-            val errorText = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Unknown Error"
-            error("Ollama REST API returned HTTP $responseCode: $errorText")
-        }
-
-        streamRawJsonChunks(connection, onChunk) { completedData ->
-            onAiJobComplete(completedData)
-        }
-        connection.disconnect()
-        Result.Success(Unit)
-    } catch (e: Exception) {
-        println("Error running Ollama job: ${e.message}")
-        Result.Failure(e)
     }
 
     internal fun streamRawJsonChunks(

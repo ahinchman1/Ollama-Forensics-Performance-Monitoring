@@ -38,60 +38,70 @@ class DashboardViewModel(
             essayText = "Preparing Ollama essay job..."
         )
 
-        scope.launch(contextPool.mainImmediateDispatcher) {
-            try {
-                withContext(contextPool.ioDispatcher) {
-                    when (val checkDep = ollamaJobOrchestrator.checkMonitoringToolDependency()) {
-                        is Result.Success -> {
-                            ollamaJobOrchestrator.startDashboard()
-                            ollamaJobOrchestrator.startServer()
-                        }
-
-                        is Result.Failure -> _viewState.update {
-                            DashboardViewState.Error(
-                                checkDep.exception.message ?: "Unknown error",
-                                tmuxExecutable,
-                                btopExecutable,
-                                ollamaExecutable,
-                            )
-                        }
+        scope.launch(contextPool.ioDispatcher) {
+            when (val checkDep = ollamaJobOrchestrator.checkMonitoringToolDependency()) {
+                is Result.Success -> {
+                    ollamaJobOrchestrator.startDashboard()
+                    ollamaJobOrchestrator.startServer()
+                    withContext(contextPool.mainImmediateDispatcher) {
+                        updateToActiveJob()
                     }
+                    synchronousRefresh()
+                    startObservabilityStream()
+
+                    getPerformanceData(onEssayChunkReceived)
+
                 }
 
-                _viewState.update { currentState ->
-                    if (currentState is DashboardViewState.ActiveJob) {
-                        currentState.copy(
-                            statusMessage = "Dashboard running. Ollama essay generation is starting.",
-                            essayText = "Waiting for Ollama pre-fill..."
-                        )
-                    } else currentState
-                }
-
-                synchronousRefresh()
-                startObservabilityStream()
-
-                withContext(contextPool.ioDispatcher) {
-                    ollamaJobOrchestrator.runOllamaEssayJob(
-                        model = ollamaModel,
-                        prompt = prompt,
-                        onChunk = updateText { onEssayChunkReceived(it) },
-                        onAiJobCompleteUpdateGPUPanel = { data -> onAiJobComplete(data) },
+                is Result.Failure -> _viewState.update {
+                    val failureMessage = checkDep.exception.message ?: checkDep.exception::class.simpleName
+                    updatePipelineStatus(isComplete = true, failureMessage = failureMessage)
+                    DashboardViewState.Error(
+                        checkDep.exception.message ?: "Unknown error",
+                        tmuxExecutable,
+                        btopExecutable,
+                        ollamaExecutable,
                     )
                 }
+            }
+        }
+    }
 
+    private suspend fun getPerformanceData(onEssayChunkReceived: (String) -> Unit) {
+        when (val performanceMetrics = ollamaJobOrchestrator.runOllamaEssayJob(
+            model = ollamaModel,
+            prompt = prompt,
+            onChunk = updateText { onEssayChunkReceived(it) },
+        )) {
+            is Result.Success -> {
+                println("Job completed.")
+                onAiJobComplete(performanceMetrics.data)
                 updatePipelineStatus(isComplete = true)
-            } catch (e: Exception) {
-                e.printStackTrace()
                 cleanupRuntimeResources()
+            }
 
-                updatePipelineStatus(isComplete = false, failureMessage = e.message ?: e::class.simpleName)
-                _viewState.value = DashboardViewState.Error(
-                    errorMessage = "Pipeline Error: ${e.message ?: e::class.simpleName}",
-                    tmuxPath = tmuxExecutable,
-                    btopPath = btopExecutable,
-                    ollamaPath = ollamaExecutable
+            is Result.Failure -> _viewState.update {
+                val e = performanceMetrics.exception
+                println("Unable to get performance data. Cause: ")
+                updatePipelineStatus(isComplete = true, failureMessage = e.message ?: e::class.simpleName)
+                DashboardViewState.Error(
+                    performanceMetrics.exception.message ?: "Unknown error",
+                    tmuxExecutable,
+                    btopExecutable,
+                    ollamaExecutable,
                 )
             }
+        }
+    }
+
+    private fun updateToActiveJob() {
+        _viewState.update { currentState ->
+            if (currentState is DashboardViewState.ActiveJob) {
+                currentState.copy(
+                    statusMessage = "Dashboard running. Ollama essay generation is starting.",
+                    essayText = "Waiting for Ollama pre-fill...",
+                )
+            } else currentState
         }
     }
 
@@ -123,18 +133,16 @@ class DashboardViewModel(
     }
 
     suspend fun synchronousRefresh() {
-        val metrics = withContext(contextPool.ioDispatcher) {
-            ollamaJobOrchestrator.captureTmuxPane("${tmuxSessionName}:0.0")
-        }
+        val metrics = ollamaJobOrchestrator.captureTmuxPane("${tmuxSessionName}:0.0")
+        val gpu = ollamaJobOrchestrator.captureTmuxPane("${tmuxSessionName}:0.1")
 
-        val gpu = withContext(contextPool.ioDispatcher) {
-            ollamaJobOrchestrator.captureTmuxPane("${tmuxSessionName}:0.1")
-        }
 
-        _viewState.update { currentState ->
-            if (currentState is DashboardViewState.ActiveJob) {
-                currentState.copy(metricsPanel = metrics, gpuPanel = gpu)
-            } else currentState
+        withContext(contextPool.mainDispatcher) {
+            _viewState.update { currentState ->
+                if (currentState is DashboardViewState.ActiveJob) {
+                    currentState.copy(metricsPanel = metrics, gpuPanel = gpu)
+                } else currentState
+            }
         }
     }
 
@@ -168,13 +176,11 @@ class DashboardViewModel(
         }
     }
 
-    private suspend fun cleanupRuntimeResources() {
+    private fun cleanupRuntimeResources() {
         observabilityJob?.cancel()
         observabilityJob = null
 
-        withContext(contextPool.ioDispatcher) {
-            ollamaJobOrchestrator.cleanupRuntimeResources()
-        }
+        ollamaJobOrchestrator.cleanupRuntimeResources()
     }
 
     private fun onAiJobComplete(metrics: PerformanceMetrics) {
@@ -196,7 +202,7 @@ class DashboardViewModel(
             
               PHASE 2: Generation (Writing Response)
               ├── Tokens Streamed:  ${metrics.generatedTokensCount}
-              └── Generation Speed: ${metrics.formattedGenerationSpeed} [Time: $generationSpeed]
+              └── Generation Speed: ${metrics.formattedGenerationSpeed} [Time: $generationSpeed ]
             
               [ HARDWARE FORENSICS SUMMARY ]
               PROCESSOR CPU LOAD: ${metrics.osMetrics.temperature}°C Avg Total Package
@@ -204,12 +210,28 @@ class DashboardViewModel(
             ================================================================================
         """.trimIndent()
 
+        val systemsPanelSummary = """
+        ================================================================================
+          SYSTEM RESOURCE SNAPSHOT
+        ================================================================================
+          GLOBAL TEMPERATURE : ${metrics.osMetrics.temperature}°C
+          TOTAL SYSTEM THREADS: ${metrics.osMetrics.threadCount}
+          ACTIVE CORES DETECTED: ${metrics.osMetrics.cores.size}
+          
+          [ CORE TELEMETRY DETAILED BREAKDOWN ]
+          ${metrics.osMetrics.cores.joinToString("\n  ") { "├── ${it.name}: ${it.temperature}°C" }}
+        ================================================================================
+        """.trimIndent()
+
+        println(processedMetricsLayout)
+        println(systemsPanelSummary)
+
         _viewState.update { currentState ->
             if (currentState is DashboardViewState.ActiveJob) {
                 currentState.copy(
                     statusMessage = "Job finished successfully.",
                     metricsPanel = processedMetricsLayout,
-                    gpuPanel = metrics.osMetrics.cpuTelemetry,
+                    gpuPanel = systemsPanelSummary,
                 )
             } else currentState
         }
