@@ -2,6 +2,7 @@ package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.model
 
 import androidx.compose.runtime.Immutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaResponseCompletedData
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
 
 @Immutable
 sealed interface DashboardViewState {
@@ -25,6 +26,6 @@ sealed interface DashboardViewState {
         val metricsPanel: String,
         val gpuPanel: String,
         val essayText: String,
-        val completedData: OllamaResponseCompletedData,
+        val completedData: PerformanceMetrics,
     ): DashboardViewState
 }

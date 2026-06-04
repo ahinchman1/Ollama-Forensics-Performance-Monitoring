@@ -52,12 +52,11 @@ class DashboardViewModel(
                     getPerformanceData(onEssayChunkReceived)
 
                 }
-
                 is Result.Failure -> _viewState.update {
                     val failureMessage = checkDep.exception.message ?: checkDep.exception::class.simpleName
-                    updatePipelineStatus(isComplete = true, failureMessage = failureMessage)
+                    println(failureMessage)
                     DashboardViewState.Error(
-                        checkDep.exception.message ?: "Unknown error",
+                        failureMessage ?: "Unknown error",
                         tmuxExecutable,
                         btopExecutable,
                         ollamaExecutable,
@@ -73,23 +72,23 @@ class DashboardViewModel(
             prompt = prompt,
             onChunk = updateText { onEssayChunkReceived(it) },
         )) {
-            is Result.Success -> {
+            is Result.Success -> withContext(contextPool.mainDispatcher) {
                 println("Job completed.")
                 onAiJobComplete(performanceMetrics.data)
-                updatePipelineStatus(isComplete = true)
                 cleanupRuntimeResources()
             }
 
-            is Result.Failure -> _viewState.update {
+            is Result.Failure -> withContext(contextPool.mainDispatcher) {
                 val e = performanceMetrics.exception
-                println("Unable to get performance data. Cause: ")
-                updatePipelineStatus(isComplete = true, failureMessage = e.message ?: e::class.simpleName)
-                DashboardViewState.Error(
-                    performanceMetrics.exception.message ?: "Unknown error",
-                    tmuxExecutable,
-                    btopExecutable,
-                    ollamaExecutable,
-                )
+                println("Unable to get performance data. Cause: ${e.message}")
+                _viewState.update {
+                    DashboardViewState.Error(
+                        performanceMetrics.exception.message ?: "Unknown error",
+                        tmuxExecutable,
+                        btopExecutable,
+                        ollamaExecutable,
+                    )
+                }
             }
         }
     }
@@ -161,21 +160,6 @@ class DashboardViewModel(
         }
     }
 
-    fun updatePipelineStatus(isComplete: Boolean, failureMessage: String? = null) {
-        _viewState.update { currentState ->
-            if (currentState is DashboardViewState.ActiveJob) {
-                if (isComplete) {
-                    currentState.copy(statusMessage = "Ollama essay generation complete. Monitoring panels active.")
-                } else {
-                    currentState.copy(
-                        statusMessage = "Ollama essay generation failed.",
-                        essayText = failureMessage ?: "Ollama pipeline failure encountered."
-                    )
-                }
-            } else currentState
-        }
-    }
-
     private fun cleanupRuntimeResources() {
         observabilityJob?.cancel()
         observabilityJob = null
@@ -184,8 +168,8 @@ class DashboardViewModel(
     }
 
     private fun onAiJobComplete(metrics: PerformanceMetrics) {
-        val processingSpeed = "${String.format("%.2fs", metrics.promptEvaluationDurationNanos.nanosToSeconds())}"
-        val generationSpeed = "${String.format("%.2fs", metrics.generationDurationNanos.nanosToSeconds())}"
+        val processingSpeed = String.format("%.2fs", metrics.promptEvaluationDurationNanos.nanosToSeconds())
+        val generationSpeed = String.format("%.2fs", metrics.generationDurationNanos.nanosToSeconds())
 
         val processedMetricsLayout = """
             ================================================================================
@@ -211,16 +195,16 @@ class DashboardViewModel(
         """.trimIndent()
 
         val systemsPanelSummary = """
-        ================================================================================
-          SYSTEM RESOURCE SNAPSHOT
-        ================================================================================
-          GLOBAL TEMPERATURE : ${metrics.osMetrics.temperature}°C
-          TOTAL SYSTEM THREADS: ${metrics.osMetrics.threadCount}
-          ACTIVE CORES DETECTED: ${metrics.osMetrics.cores.size}
-          
-          [ CORE TELEMETRY DETAILED BREAKDOWN ]
-          ${metrics.osMetrics.cores.joinToString("\n  ") { "├── ${it.name}: ${it.temperature}°C" }}
-        ================================================================================
+            ================================================================================
+            SYSTEM RESOURCE SNAPSHOT
+            ================================================================================
+            GLOBAL TEMPERATURE : ${metrics.osMetrics.temperature}°C
+            TOTAL SYSTEM THREADS: ${metrics.osMetrics.threadCount}
+            ACTIVE CORES DETECTED: ${metrics.osMetrics.cores.size}
+            
+            [ CORE TELEMETRY DETAILED BREAKDOWN ]
+            ${metrics.osMetrics.cores.joinToString("\n\t\t") { "├── ${it.name}: ${it.temperature}°C" }}
+            ================================================================================
         """.trimIndent()
 
         println(processedMetricsLayout)
@@ -228,10 +212,12 @@ class DashboardViewModel(
 
         _viewState.update { currentState ->
             if (currentState is DashboardViewState.ActiveJob) {
-                currentState.copy(
+                DashboardViewState.CompletedJob(
                     statusMessage = "Job finished successfully.",
                     metricsPanel = processedMetricsLayout,
                     gpuPanel = systemsPanelSummary,
+                    completedData = metrics,
+                    essayText = currentState.essayText,
                 )
             } else currentState
         }

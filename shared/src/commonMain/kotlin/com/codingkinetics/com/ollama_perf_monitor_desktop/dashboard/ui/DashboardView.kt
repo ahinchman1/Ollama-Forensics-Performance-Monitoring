@@ -51,7 +51,7 @@ fun DashboardView(viewModel: DashboardViewModel) {
     val currentGpuContent = when (val state = uiState) {
         is DashboardViewState.CompletedJob -> {
             println("Completed job data: ${state.completedData}")
-            state.completedData.toString()
+            state.gpuPanel
         }
         is DashboardViewState.ActiveJob -> state.gpuPanel
         is DashboardViewState.Error -> "Diagnostics:\ntmux: ${state.tmuxPath}\nollama: ${state.ollamaPath}"
