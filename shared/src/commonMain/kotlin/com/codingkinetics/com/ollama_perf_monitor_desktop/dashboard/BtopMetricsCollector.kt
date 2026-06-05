@@ -102,24 +102,31 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
         return parseBtopDataFromString(rawText)
     }
 
+    private fun getCoreTemperatures(cpuSnapshotData: CpuSnapshotData): Int {
+        return if (cpuSnapshotData.globalTemperature == 0 && cpuSnapshotData.cores.isNotEmpty()) {
+            cpuSnapshotData.cores.map { it.temperature }.roverage().toInt()
+        } else {
+            cpuSnapshotData.globalTemperature
+        }
+    }
+
     internal fun parseBtopDataFromString(rawText: String): Result<BtopMetrics> {
         try {
             val cleanText = rawText.sanitizeUIBorders()
+            println("DEBUG: Clean Text received from Btop: '$cleanText'")
             val lines = cleanText.lines()
 
             val cpuStats = parseGlobalCPUTempAndLoad(lines)
-            val totalThreads = extractSystemStatesFromFallbackScanners(lines)
+            val telemetry = scrapeBtopTelemetry(lines)
+            val coreTemps = getCoreTemperatures(cpuStats)
+            val threadCount = captureOllamaThreadCount()
 
-            val metrics =  BtopMetrics(
+            val metrics = BtopMetrics(
                 cores = cpuStats.cores.sortedBy { it.name.substringAfter(" ").toIntOrNull() ?: 0 },
-                temperature = if (cpuStats.globalTemperature == 0 && cpuStats.cores.isNotEmpty()) {
-                    cpuStats.cores.map { it.temperature }.roverage().toInt()
-                } else {
-                    cpuStats.globalTemperature
-                },
+                temperature = coreTemps,
                 processCpuConsumption = cpuStats.processCpu,
-                cpuTelemetry = cleanText,
-                threadCount = totalThreads,
+                cpuTelemetry = telemetry,
+                threadCount = threadCount,
             )
             println("Parsed metrics: $metrics")
             return Result.Success(metrics)
@@ -162,14 +169,30 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
         return CpuSnapshotData(globalTemperature, processCpu, coresList)
     }
 
-    private fun extractSystemStatesFromFallbackScanners(lines: List<String>): Int {
-        val statusLine = lines.find { line ->
-            line.contains("/") && (line.contains("signals") || line.contains("info"))
-        } ?: return 0
+    private fun scrapeBtopTelemetry(lines: List<String>): String {
+        val cpuPercentage = lines.firstOrNull { it.matches(Regex("\\d+\\.\\d+")) }?.toDouble() ?: 0.0
+        val pid = lines.firstOrNull { it.matches(Regex("\\d+")) && it.length >= 3 }?.toLong() ?: 0L
 
-        val match = threadRegex.find(statusLine)
+        val ramAllocation = lines.firstOrNull { it.contains(Regex("\\d+\\.\\d+[G|M]")) } ?: "0.0G"
+        return "PID: $pid | CPU: $cpuPercentage% | RAM Used: $ramAllocation"
+    }
 
-        return match?.groupValues?.get(2)?.toIntOrNull() ?: 0
+    private fun captureOllamaThreadCount(): Int {
+        return try {
+            val pidProcess = ProcessBuilder("pgrep", "-f", "ollama serve").start()
+            val pid = pidProcess.inputStream.bufferedReader().use { it.readText().trim() }
+
+            if (pid.isBlank()) return 0
+
+            val countPidThreads = ProcessBuilder("ps", "-M", "-p", pid).start()
+            val lines = countPidThreads.inputStream.bufferedReader().use { it.readLines() }
+
+            // subtract 1 to account for the command column header line
+            (lines.size - 1).coerceAtLeast(0)
+        } catch (e: Exception) {
+            println("Failed to read system thread allocation: ${e.message}")
+            0
+        }
     }
 
     private fun String.sanitizeUIBorders(): String = try {

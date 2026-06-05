@@ -4,6 +4,8 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.nanosToSecon
 import java.util.Locale
 
 data class PerformanceMetrics(
+    val prompt: String,
+    val output: String,
     val osMetrics: BtopMetrics,
     val loadDurationNanos: Long,              // Keep raw for precise calculations/sorting
     val totalDurationNanos: Long,             // Keep raw for precise calculations/sorting
@@ -15,7 +17,6 @@ data class PerformanceMetrics(
     val generationDurationNanos: Long,        // Translates from 'tabDuration'
     val hallucinationScore: String = ""       // Ready for your future Ragas integration
 ) {
-// --- CORE NUMERIC TELEMETRY MATH ---
 
     /** Velocity of token generation (tokens/sec) */
     val tokensPerSecond: Double
@@ -41,9 +42,47 @@ data class PerformanceMetrics(
     val formattedTotalDuration: String
         get() = String.format(Locale.US, "%.2fs", totalDurationNanos.nanosToSeconds())
 
+    val formattedPromptEvaluation: String
+        get() = String.format(Locale.US, "%.2fs", promptEvaluationDurationNanos.nanosToSeconds())
+
+    val formattedGenerationDuration: String
+        get() = String.format(Locale.US, "%.2fs", generationDurationNanos.nanosToSeconds())
+
+    override fun toString(): String {
+        return """
+            ====================================================================
+            OLLAMA INFERENCE PERFORMANCE FORENSICS
+            ====================================================================
+            Pipeline Status       : Done (Reason: $doneReason)
+            Total Execution Time  : $formattedTotalDuration
+            
+            CORE VELOCITY ENGINE METRICS:
+            --------------------------------------------------------------------
+            Prompt Ingestion Speed: $formattedIngestionSpeed
+            Token Generation Speed: $formattedGenerationSpeed
+            
+            TOKEN COUNTS:
+            --------------------------------------------------------------------
+            Prompt Tokens In     : $promptTokensCount tokens
+            Output Tokens Out     : $generatedTokensCount tokens
+            Total Processed Vol   : ${promptTokensCount + generatedTokensCount} tokens
+            
+            SUBSYSTEM LATENCY BREAKDOWN:
+            --------------------------------------------------------------------
+            Model Weights Load    : $formattedLoadDuration
+            Prompt Evaluation     : $formattedPromptEvaluation
+            Generation Duration   : $formattedGenerationDuration
+            
+            DIAGNOSTICS & RESEARCH METRICS:
+            --------------------------------------------------------------------
+            Hallucination Index   : ${hallucinationScore.ifBlank { "Pending Ragas Evaluation" }}
+            Underlying OS Metrics : $osMetrics
+            ====================================================================
+        """.trimIndent()
+    }
 }
 
-class BtopMetrics(
+data class BtopMetrics(
     val temperature: Int,
     val processCpuConsumption: Long,
     val cpuTelemetry: String,

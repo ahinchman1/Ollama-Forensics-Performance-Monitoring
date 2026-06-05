@@ -6,10 +6,13 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.Perfor
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 
 internal fun mapOllamaResponseToDomain(
+    prompt: String,
     responsePayload: OllamaResponseCompletedData,
     btopSnapshot: BtopMetrics,
 ): Result<PerformanceMetrics> = try {
         val metrics = PerformanceMetrics(
+            prompt = prompt,
+            output = responsePayload.response,
             osMetrics = btopSnapshot,
             loadDurationNanos = responsePayload.loadDuration,
             totalDurationNanos = responsePayload.totalDuration,

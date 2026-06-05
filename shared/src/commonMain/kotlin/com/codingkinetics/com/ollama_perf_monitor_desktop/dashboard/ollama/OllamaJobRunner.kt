@@ -139,7 +139,7 @@ class OllamaJobRunnerImpl(): OllamaJobRunner {
 
             var finalResultData: OllamaResponseCompletedData? = null
 
-            streamRawJsonChunks(connection, onChunk) { completedData ->
+            streamRawJsonChunks(connection, onChunk) { output, completedData ->
                 finalResultData = completedData
             }
 
@@ -157,8 +157,9 @@ class OllamaJobRunnerImpl(): OllamaJobRunner {
     internal fun streamRawJsonChunks(
         connection: HttpURLConnection,
         onChunk: (String) -> Unit,
-        onAiJobComplete: (OllamaResponseCompletedData) -> Unit = {}
+        onAiJobComplete: (String, OllamaResponseCompletedData) -> Unit,
     ) {
+        val output = StringBuilder()
         connection.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
             var line: String?
             while (reader.readLine().also { line = it } != null) {
@@ -169,11 +170,13 @@ class OllamaJobRunnerImpl(): OllamaJobRunner {
                     val chunk = jsonWorker.decodeFromString<OllamaStreamChunk>(currentLine)
                     if (chunk.response.isNotEmpty()) {
                         onChunk(chunk.response)
+                        output.append(chunk.response)
                     }
 
                     if (chunk.done) {
+                        val output = output.toString()
                         val finalData = jsonWorker.decodeFromString<OllamaResponseCompletedData>(currentLine)
-                        onAiJobComplete(finalData)
+                        onAiJobComplete(output, finalData)
                     }
                 }.onFailure { e ->
                     println("Skipping malformed or incomplete JSON frame: $currentLine. Error: ${e.message}")
