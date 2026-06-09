@@ -79,7 +79,10 @@ class OllamaJobOrchestrator(
         btopMetrics.startTmuxDashboard()
     }
 
+    // TODO create a model object that captures graph state live as well
     internal fun captureTmuxPane(targetPane: String): String {
+        val cpuGraph = btopMetrics.extractCpuGraph(targetPane)
+        // TODO now do something with the graph like extract the data
         return btopMetrics.captureTmuxPane(targetPane)
     }
 

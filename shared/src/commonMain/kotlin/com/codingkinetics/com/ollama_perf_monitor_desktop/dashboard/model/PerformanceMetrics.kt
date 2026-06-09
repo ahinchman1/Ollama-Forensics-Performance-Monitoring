@@ -87,6 +87,7 @@ data class BtopMetrics(
     val processCpuConsumption: Long,
     val cpuTelemetry: String,
     val cores: List<Core> = listOf(),
+    val cpuGraph: List<String> = listOf(),
     val threadCount: Int = 0, // TODO thread count and presence of leaking threads
 )
 

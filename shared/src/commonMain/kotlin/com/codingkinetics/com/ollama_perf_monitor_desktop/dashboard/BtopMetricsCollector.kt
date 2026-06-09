@@ -9,6 +9,7 @@ interface BtopMetricsCollector {
     fun captureTmuxPane(targetPane: String = "$tmuxSessionName:0.0"): String
     fun startTmuxDashboard()
     fun stopTmuxDashboard()
+    fun extractCpuGraph(rawBtopOutput: String): List<String>
     fun parseBtopData(): Result<BtopMetrics>
 }
 
@@ -26,7 +27,11 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
                 .withCliPath()
                 .start()
 
-            process.inputStream.bufferedReader().use { it.readText() }.trimEnd()
+            process.inputStream.bufferedReader().use {
+                val text =  it.readText()
+                print(text)
+                text
+            }.trimEnd()
         } catch (e: Exception) {
             println("Error capturing pane $targetPane: ${e.message}")
             "Pane error $targetPane: ${e.message}"
@@ -112,6 +117,7 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
 
     internal fun parseBtopDataFromString(rawText: String): Result<BtopMetrics> {
         try {
+            val cpuGraph = extractCpuGraph(rawText)
             val cleanText = rawText.sanitizeUIBorders()
             println("DEBUG: Clean Text received from Btop: '$cleanText'")
             val lines = cleanText.lines()
@@ -125,6 +131,7 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
                 cores = cpuStats.cores.sortedBy { it.name.substringAfter(" ").toIntOrNull() ?: 0 },
                 temperature = coreTemps,
                 processCpuConsumption = cpuStats.processCpu,
+                cpuGraph = cpuGraph,
                 cpuTelemetry = telemetry,
                 threadCount = threadCount,
             )
@@ -134,6 +141,46 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
             println("Unable to get BtopMetrics. Cause of error: $e")
             return Result.Failure(e)
         }
+    }
+
+    // find the core CPU rows by anchoring on the cpu header and the inner box layout
+    override fun extractCpuGraph(rawBtopOutput: String): List<String> {
+        val lines = rawBtopOutput.lines()
+        val graphLines = mutableListOf<String>()
+
+        for (line in lines) {
+            if (line.contains("CPU ■") || line.contains("C0") || line.contains("C1")) {
+
+                when {
+                    // Row 1 - 22% ⣀⢠⣤⣤⣤  66°C
+                    line.contains("CPU ■") -> {
+                        val graphChunk = line.substringAfter("■ ").substringBefore(" ")
+                        if (graphChunk.any { it.isBraille() }) graphLines.add(graphChunk)
+                    }
+
+                    // Row 2 -  ⢀⣼⣧⣀⣴│C0
+                    line.contains("│C0") -> {
+                        val graphChunk = line.substringBefore("│C0").trim().split(" ").last()
+                        if (graphChunk.any { it.isBraille() }) graphLines.add(graphChunk)
+                    }
+
+                    // Row 3 - ⠈⢻⡟⠉⠻│C1
+                    line.contains("│C1") -> {
+                        val graphChunk = line.substringBefore("│C1").trim().split(" ").last()
+                        if (graphChunk.any { it.isBraille() }) graphLines.add(graphChunk)
+                    }
+                }
+            }
+        }
+        return graphLines
+    }
+
+    /**
+     * Extension function to verify if a character belongs to the Unicode Braille Patterns block.
+     * Unicode range: U+2800 – U+28FF
+     */
+    fun Char.isBraille(): Boolean {
+        return this.code in 0x2800..0x28FF
     }
 
     private fun parseGlobalCPUTempAndLoad(lines: List<String>): CpuSnapshotData {

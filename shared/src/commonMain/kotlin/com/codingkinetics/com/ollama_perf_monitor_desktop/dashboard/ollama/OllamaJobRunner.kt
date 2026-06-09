@@ -26,7 +26,7 @@ interface OllamaJobRunner {
     fun cleanupRuntimeResources()
 }
 
-class OllamaJobRunnerImpl(): OllamaJobRunner {
+class OllamaJobRunnerImpl: OllamaJobRunner {
 
     private var serverProcess: Process? = null
 
