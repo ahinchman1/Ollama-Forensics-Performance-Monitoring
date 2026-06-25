@@ -1,4 +1,4 @@
-package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard
+package com.codingkinetics.com.ollama_perf_monitor_desktop.util
 
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -8,6 +8,13 @@ const val tmuxSessionName = "model_profiling_session"
 val tmuxExecutable = resolveExecutable("tmux")
 val ollamaExecutable = resolveExecutable("ollama")
 val btopExecutable = resolveExecutable("btop")
+
+val scriptPath = "scripts/hallucination_score_ragas.py"
+val ragasExecutable = if (File(scriptPath).exists()) {
+    resolveExecutable(scriptPath)
+} else {
+    resolveExecutable("../$scriptPath")
+}
 
 internal fun ProcessBuilder.withCliPath(): ProcessBuilder {
     val env = this.environment()

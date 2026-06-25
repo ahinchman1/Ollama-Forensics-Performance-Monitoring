@@ -1,6 +1,6 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model
 
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.nanosToSeconds
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.nanosToSeconds
 import java.util.Locale
 
 data class PerformanceMetrics(
@@ -15,7 +15,8 @@ data class PerformanceMetrics(
     val promptEvaluationDurationNanos: Long,
     val generatedTokensCount: Long,           // Translates from 'tabCount'
     val generationDurationNanos: Long,        // Translates from 'tabDuration'
-    val hallucinationScore: String = ""       // Ready for your future Ragas integration
+    val hallucinationIndex: Double = 0.0,
+    val faithfulnessScore: Double = 0.0,
 ) {
 
     /** Velocity of token generation (tokens/sec) */
@@ -75,12 +76,14 @@ data class PerformanceMetrics(
             
             DIAGNOSTICS & RESEARCH METRICS:
             --------------------------------------------------------------------
-            Hallucination Index   : ${hallucinationScore.ifBlank { "Pending Ragas Evaluation" }}
+            Hallucination Index   : ${hallucinationIndex.ifZero { "Pending Ragas Evaluation" }}
             Underlying OS Metrics : $osMetrics
             ====================================================================
         """.trimIndent()
     }
 }
+
+private fun Double.ifZero(ifZero: () -> String) = if (this == 0.0) ifZero() else toString()
 
 data class BtopMetrics(
     val temperature: Int,
@@ -88,7 +91,7 @@ data class BtopMetrics(
     val cpuTelemetry: String,
     val cores: List<Core> = listOf(),
     val cpuGraph: List<String> = listOf(),
-    val threadCount: Int = 0, // TODO thread count and presence of leaking threads
+    val threadCount: Int = 0,
 )
 
 data class Core(

@@ -1,12 +1,18 @@
-package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard
+package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics
 
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.btopExecutable
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.commandExists
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.BtopMetrics
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.Core
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuSnapshotData
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.runCommandIgnoringErrors
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxExecutable
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.withCliPath
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 
 interface BtopMetricsCollector {
-    fun captureTmuxPane(targetPane: String = "$tmuxSessionName:0.0"): String
+    fun captureTmuxPane(targetPane: String = "${tmuxSessionName}:0.0"): String
     fun startTmuxDashboard()
     fun stopTmuxDashboard()
     fun extractCpuGraph(rawBtopOutput: String): List<String>

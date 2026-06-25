@@ -1,21 +1,22 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollama
 
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.MetricsAnalysis
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.BtopMetricsCollector
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.BtopMetricsCollectorImpl
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.commandExists
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.RagasEngine
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.BtopMetricsCollector
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.commandExists
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.mapper.mapOllamaResponseToDomain
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.EvaluationResult
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaResponseCompletedData
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.runCommandIgnoringErrors
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.tmuxExecutable
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.tmuxSessionName
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.flatMap
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.runCommandIgnoringErrors
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxExecutable
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
 
 class OllamaJobOrchestrator(
-    val jobRunner: OllamaJobRunner = OllamaJobRunnerImpl(),
-    val btopMetrics: BtopMetricsCollector = BtopMetricsCollectorImpl(),
-    val aiJobAnalyzer: MetricsAnalysis = MetricsAnalysis(),
+    val jobRunner: OllamaJobRunner,
+    val btopMetrics: BtopMetricsCollector,
+    val ragasEngine: RagasEngine,
 ) {
 
     internal fun checkMonitoringToolDependency(): Result<Unit> {
@@ -39,20 +40,34 @@ class OllamaJobOrchestrator(
     ): Result<PerformanceMetrics> = when (val ollamaData = jobRunner.runOllamaEssayJob(model, prompt, onChunk)) {
         is Result.Success -> {
             logCompletedStats(ollamaData.data)
-            getPerformanceData(prompt, ollamaData.data.response, ollamaData.data)
+            evaluateRagasScore(prompt, ollamaData.data.response, ollamaData.data)
         }
         is Result.Failure -> {
             ollamaData
         }
     }
 
-    private fun getPerformanceData(prompt: String, answer: String, data: OllamaResponseCompletedData): Result<PerformanceMetrics> =
+    private suspend fun evaluateRagasScore(
+        prompt: String,
+        response: String,
+        ollamaData: OllamaResponseCompletedData,
+    ): Result<PerformanceMetrics> =
+        ragasEngine.calculateHallucinationScore(prompt, response).flatMap { evalData ->
+            getPerformanceData(prompt, ollamaData, evalData)
+        }
+
+    private fun getPerformanceData(
+        prompt: String,
+        data: OllamaResponseCompletedData,
+        ragasEvaluation: EvaluationResult,
+    ): Result<PerformanceMetrics> =
         when (val parsedBtopMetrics = btopMetrics.parseBtopData()) {
             is Result.Success -> {
                 val finalMetrics = mapOllamaResponseToDomain(
                     prompt = prompt,
                     responsePayload = data,
                     btopSnapshot = parsedBtopMetrics.data,
+                    ragasEvaluation
                 )
 
                 btopMetrics.stopTmuxDashboard()

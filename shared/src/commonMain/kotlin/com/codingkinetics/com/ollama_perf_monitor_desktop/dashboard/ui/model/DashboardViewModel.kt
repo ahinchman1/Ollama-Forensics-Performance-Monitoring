@@ -1,16 +1,15 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.model
 
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollama.OllamaJobOrchestrator
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaResponseCompletedData
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.btopExecutable
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.btopExecutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.nanosToSeconds
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollamaExecutable
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.tmuxExecutable
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.tmuxSessionName
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.nanosToSeconds
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.ollamaExecutable
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxExecutable
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -121,9 +120,11 @@ class DashboardViewModel(
         }
 
     fun stopPipeline() {
-        scope.launch {
+        scope.launch(contextPool.ioDispatcher) {
             cleanupRuntimeResources()
-            _viewState.value = DashboardViewState.Idle
+            withContext(contextPool.mainDispatcher) {
+                _viewState.value = DashboardViewState.Idle
+            }
         }
     }
 

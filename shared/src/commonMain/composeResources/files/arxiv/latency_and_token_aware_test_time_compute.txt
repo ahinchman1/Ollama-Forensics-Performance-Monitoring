@@ -1,0 +1,497 @@
+source: https://arxiv.org/html/2509.09864v1
+date accessed: 2026-06-20
+
+License: arXiv.org perpetual non-exclusive license
+arXiv:2509.09864v1 [cs.LG] 11 Sep 2025
+Latency and Token-Aware Test-Time Compute
+Jenny Y. Huang1,3   Mehul Damani1,3   Yousef El-Kurdi2   Ramon Astudillo2,3   Wei Sun2,3
+1Department of Electrical Engineering and Computer Science, MIT
+{jhuang9, mehul42}@mit.edu
+2IBM Research, 3MIT-IBM Watson AI Lab
+{yousefelk, ramon.astudillo, sunw}@us.ibm.com
+Abstract
+Inference-time scaling has emerged as a powerful way to improve large language model (LLM) performance by generating multiple candidate responses and selecting among them. However, existing work on dynamic allocation for test-time compute typically considers only parallel generation methods such as best-of-
+N
+, overlooking incremental decoding methods like beam search, and has largely ignored latency, focusing only on token usage. We formulate inference-time scaling as a problem of dynamic compute allocation and method selection, where the system must decide which strategy to apply and how much compute to allocate on a per-query basis. Our framework explicitly incorporates both token cost and wall-clock latency, the latter being critical for user experience and particularly for agentic workflows where models must issue multiple queries efficiently. Experiments on reasoning benchmarks show that our approach consistently outperforms static strategies, achieving favorable accuracy–cost trade-offs while remaining practical for deployment.
+
+1Introduction
+An emerging paradigm in large language models (LLMs) is inference-time scaling, where performance improves by allocating more computation at inference rather than through additional training. Instead of producing a single response, models generate multiple candidates using strategies such as best-of-
+N
+ sampling, self-consistency (majority voting), or beam search (Ouyang et al., 2022; Wang et al., 2023). This approach has proven particularly effective in reasoning-intensive domains such as mathematics and coding, where additional compute enables longer chains of thought and substantially stronger performance (OpenAI, 2024; Brown et al., 2024; Guo et al., 2025).
+
+Yet these gains come at steep computational cost. Fixed strategies risk overspending on simple cases while under-provisioning hard ones, a problem amplified in reasoning models where each trace may span thousands of tokens (Wu et al., 2025). In agentic workflows with repeated queries, the burden compounds further. Prior work shows that different inference-scaling strategies perform differently depending on problem difficulty (Snell et al., 2024), underscoring the need not only to allocate the right amount of compute but also to select the most effective strategy. This raises a central question: can we preserve the benefits of compute-intensive inference without paying their full price?
+
+Several recent works aim to make inference-time scaling more efficient by adapting to query difficulty. Snell et al. (2024) demonstrate that adapting inference strategies by difficulty can outperform best-of-
+N
+ with
+2
+ to
+4
+ times less compute, but their notion of difficulty relies on oracle correctness or costly Monte Carlo sampling, making it computationally prohibitive to use in deployment. Damani et al. (2024) offer a more practical alternative by training lightweight predictors for adaptive routing, though their method focuses on best-of-
+N
+ and does not test out other decoding methods.
+
+More broadly, optimal compute allocation parallels the problem of LLM routing (Ong et al., 2024; Hu et al., 2024; Tsiourvas et al., 2025), where the goal is to select the most appropriate model given query heterogeneity. Ding et al. (2025) extend this idea to routing across both models and inference strategies, i.e., choosing between a large model or several smaller ones augmented with test-time compute, but their analysis is restricted to best-of-
+N
+.
+
+Most work on optimal compute allocation has focused solely deciding the number of generations to sample (Damani et al., 2024; Zhang et al., 2024; Ding et al., 2025; Raman et al., 2025), despite evidence that different inference strategies behave differently across difficulty levels (Snell et al., 2024), e.g., best-of-
+N
+ excels on easy queries, beam search on harder queries. Crucially, however, not all tokens are generated equally: best-of-
+N
+ and majority voting can exploit parallel generation of independent samples, whereas beam search requires step-by-step synchronization across beams, incurring higher latency. In interactive settings, latency is as critical as accuracy and compute budget, an aspect overlooked in prior work and a central focus of this work.
+
+In this work, we propose a latency- and token-aware framework for inference-time scaling that jointly determines which strategy to apply and how much compute to allocate per query.
+
+2Methodology
+Let
+ℳ
+ denote the set of inference-time scaling methods under consideration. Each method
+m
+∈
+ℳ
+ is parameterized by a vector of hyperparameters
+θ
+m
+. We define a decoding strategy as a tuple
+s
+:=
+(
+m
+,
+θ
+m
+)
+, where
+m
+∈
+ℳ
+ and
+θ
+m
+ are method-specific hyperparameters. The system must select, on a per-query basis, the optimal strategy
+s
+. While we focus on a representative subset of inference-time scaling methods that have also been studied by Snell et al. (2024), the framework we propose extends to more advanced approaches (Yao et al., 2023; Shinn et al., 2023; Astudillo et al., 2025).
+
+2.1Inference Scaling Methods
+Sampling-based methods such as majority voting and best-of-
+N
+ admit parallel generation:
+N
+ candidate responses can be produced simultaneously, so latency grows only modestly with
+N
+. Their hyperparameter is simply
+θ
+m
+=
+N
+, the number of candidates.
+
+Majority Voting. Output the most frequent final answer among
+N
+ candidates.
+
+Best-of-
+N
+. Output the candidate with the highest reward score, either using raw scores (Naive) or aggregated scores across identical responses (Weighted).
+
+Beam Search. Unlike sampling-based methods, beam search is inherently incremental: partial solutions are expanded step by step. At each step, up to
+W
+ continuations are generated for each active beam, scored by a process reward model (PRM), and the top-
+N
+ beams are retained. After at most
+D
+ steps, this yields
+N
+ complete solutions, from which the final answer is chosen via majority voting. The method is parameterized by
+θ
+Beam
+=
+(
+N
+,
+W
+,
+D
+)
+, where
+N
+ is the number of active beams,
+W
+ the branching factor, and
+D
+ the maximum depth.
+
+2.2Utility Formulation
+Each decoding strategy
+s
+ applied to a query
+x
+ is characterized by three quantities:
+
+Accuracy (
+a
+s
+​
+(
+x
+)
+). A measure of output quality. Its definition depends on the domain: in mathematics, it corresponds to exact match of the predicted final answer with the ground truth; in coding, it may be the fraction of unit tests passed; and in open-ended tasks such as dialogue or summarization, it can be derived from reward model scores or human preference judgments.
+
+Token Cost (
+T
+s
+​
+(
+x
+)
+). The number of output tokens generated, reflecting the computational load.
+
+Latency (
+L
+s
+​
+(
+x
+)
+). The total wall-clock time required for decoding and reward evaluation, capturing responsiveness from the user’s perspective.
+
+We define the utility of strategy
+s
+ on query
+x
+ as
+
+U
+s
+​
+(
+x
+)
+=
+a
+s
+​
+(
+x
+)
+−
+λ
+T
+​
+T
+s
+​
+(
+x
+)
+−
+λ
+L
+​
+L
+s
+​
+(
+x
+)
+,
+(1)
+where
+λ
+T
+,
+λ
+L
+≥
+0
+ are penalty weights, set according to user preferences, reflecting the relative importance of token usage and latency. This formulation balances two complementary dimensions of efficiency: computational load (measured in tokens) and responsiveness (measured in time).
+
+2.3Optimal Strategy Selection
+For each query
+x
+, the optimal decoding strategy is
+
+s
+∗
+​
+(
+x
+)
+=
+arg
+⁡
+max
+s
+∈
+𝒮
+⁡
+U
+s
+​
+(
+x
+)
+.
+Thus, inference-time scaling is cast as a problem of dynamic compute allocation and method selection: determining both which strategy to apply and how much compute to allocate on a per-query basis.
+
+2.4Modeling Utility
+At inference time we cannot directly observe accuracy
+a
+s
+​
+(
+x
+)
+, token count
+T
+s
+​
+(
+x
+)
+, or latency
+L
+s
+​
+(
+x
+)
+. Accuracy requires the ground truth, while token count and latency are only known after generation. To make the utility in Eq.˜1 computable in advance, we train predictors for these quantities.
+
+Accuracy Model (
+a
+^
+s
+​
+(
+x
+)
+). We train a lightweight probe to estimate, for query
+x
+ and strategy
+s
+, the probability of producing a correct answer, thus capturing query difficulty. Features include (i) semantic embeddings of the query and (ii) contextual descriptors of the decoding strategy (e.g., number of generations, beam width, query length). A two-layer MLP is trained with cross-entropy loss. This probe is simple to train and deploy yet yields accurate estimates of strategy accuracy (details in Appendix˜A).
+
+Cost Model (
+T
+^
+s
+​
+(
+x
+)
+,
+L
+^
+s
+​
+(
+x
+)
+). For each decoding strategy, we precompute average token count and execution time from the training set. At inference, these mean values are used as predicted costs in the utility function. As shown in Figs.˜7 and 8, this approximation closely matches oracle costs, indicating that cost variation is dominated by the choice of strategy rather than the query.
+
+3Experiments
+Setup. We test our query-adaptive decoding strategy on the NuminaMath-CoT dataset (Li et al., 2024), a large-scale benchmark of mathematical reasoning queries designed to assess step-by-step reasoning in LLMs. As the generator, we adopt Alibaba’s Qwen2.5-1.5B-Instruct, a compact instruction-tuned model specialized for mathematics. To evaluate generated solutions, we use Qwen/Qwen2.5-Math-PRM-7B, a larger process reward model (PRM) trained for mathematical reasoning supervision.
+
+Refer to caption
+(a)Latency penalty
+λ
+L
+ is fixed at discrete values, while
+λ
+T
+ is varied finely to capture token usage.
+Refer to caption
+(b)Token penalty
+λ
+T
+ is fixed at discrete values, while
+λ
+L
+ is varied more finely to capture latency effect.
+Figure 1:Accuracy-cost trade-offs comparing the adaptive strategy to static inference-scaling methods. Accuracy is measured by soft-label correctness and cost measured as average (a) tokens generated per query, or (b) latency.
+Refer to caption
+Figure 2:Selections made by the query-adaptive strategy. The top row shows the proportion of queries routed to each inference-time scaling method as the cost penalty on latency (left) and token count (right) increases. The bottom row shows the proportion of queries routed to each value of number of generations (
+N
+).
+How does the query-adaptive strategy perform? From Fig.˜1, we observe that the query-adaptive strategy consistently achieves superior accuracy–cost trade-offs compared to static strategies, which plateau at relatively low accuracy.
+
+An interesting pattern emerges when both token and latency penalties are varied. For example, in Fig.˜1(b), with no token penalty (
+λ
+T
+=
+0
+) the adaptive strategy tends to select compute-heavy methods, reaching nearly 0.50 accuracy but at the expense of longer runtimes (
+∼
+40s). Increasing
+λ
+T
+ discourages token-intensive methods and shifts selection toward lighter ones, substantially reducing latency while maintaining competitive accuracy. Similar pattern is also shown in Fig.˜1(a).
+
+Which inference scaling method is being chosen? Figure 2 illustrates how strategy selection shifts as penalties on latency (left) and token usage (right) increase. When penalties are low, the adaptive method frequently invokes beam search, tolerating higher token counts (Figure 2, left) and longer runtimes (Figure 2, right) in exchange for accuracy. As
+λ
+ grows, reliance on expensive strategies decreases, and the method routes most queries to lighter, low-cost options. A similar trend is observed in the number of generations (Figure 2, bottom row): at low penalties, the method often selects large
+N
+, but it progressively shifts toward smaller
+N
+ as costs are weighted more heavily.
+
+4Discussion
+We studied inference-time scaling as a problem of dynamic compute allocation and method selection. Our framework jointly considers which method to apply and how much compute to allocate, explicitly accounting for both token cost and latency. The latter is especially important for user experience and represents a key extension beyond prior work that focused solely on token usage. Experiments on reasoning benchmarks show that query-adaptive selection achieves substantially better accuracy–efficiency trade-offs than fixed strategies. Beyond the methods explored here, our formulation extends naturally to more advanced inference-time scaling techniques, and future work will evaluate broader domains such as coding and dialogue. Another promising direction is to close the remaining gap between the adaptive strategy and the oracle by improving the accuracy of the probe used to estimate utility. We believe this line of work will be particularly impactful for agentic workflows, where models must issue multiple queries and efficiency becomes critical.
+
+References
+Astudillo et al. (2025)
+Ramón Fernandez Astudillo, Md Arafat Sultan, Aashka Trivedi, Yousef El-Kurdi, Tahira Naseem, Radu Florian, and Salim Roukos.Optimal policy minimum bayesian risk.arXiv preprint arXiv:2505.17242, 2025.
+Brown et al. (2024)
+Bradley Brown, Jordan Juravsky, Ryan Ehrlich, Ronald Clark, Quoc V Le, Christopher Ré, and Azalia Mirhoseini.Large language monkeys: Scaling inference compute with repeated sampling.arXiv preprint arXiv:2407.21787, 2024.
+Damani et al. (2024)
+Mehul Damani, Idan Shenfeld, Andi Peng, Andreea Bobu, and Jacob Andreas.Learning how hard to think: Input-adaptive allocation of lm computation.arXiv preprint arXiv:2410.04707, 2024.
+Ding et al. (2025)
+Dujian Ding, Ankur Mallick, Shaokun Zhang, Chi Wang, Daniel Madrigal, Mirian Del Carmen Hipolito Garcia, Menglin Xia, Laks VS Lakshmanan, Qingyun Wu, and Victor Rühle.Best-route: Adaptive llm routing with test-time optimal compute.arXiv preprint arXiv:2506.22716, 2025.
+Guo et al. (2025)
+Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Ruoyu Zhang, Runxin Xu, Qihao Zhu, Shirong Ma, Peiyi Wang, Xiao Bi, et al.Deepseek-r1: Incentivizing reasoning capability in llms via reinforcement learning.arXiv preprint arXiv:2501.12948, 2025.
+Hu et al. (2024)
+Qitian Jason Hu, Jacob Bieker, Xiuyu Li, Nan Jiang, Benjamin Keigwin, Gaurav Ranganath, Kurt Keutzer, and Shriyash Kaustubh Upadhyay.Routerbench: A benchmark for multi-llm routing system.arXiv preprint arXiv:2403.12031, 2024.
+Li et al. (2024)
+J. Li et al.Numinamath: A dataset of competition-level math problems with chain-of-thought reasoning.2024.NuminaMath contains over 860k math problem–solution pairs with CoT.
+Ong et al. (2024)
+Isaac Ong, Amjad Almahairi, Vincent Wu, Wei-Lin Chiang, Tianhao Wu, Joseph E Gonzalez, M Waleed Kadous, and Ion Stoica.Routellm: Learning to route llms with preference data.arXiv preprint arXiv:2406.18665, 2024.
+OpenAI (2024)
+OpenAI.The openai o1 system card.arXiv preprint arXiv:2412.16720, 2024.
+Ouyang et al. (2022)
+Long Ouyang, Jeffrey Wu, Xu Jiang, Diogo Almeida, Carroll Wainwright, Pamela Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, et al.Training language models to follow instructions with human feedback.Advances in neural information processing systems, 35:27730–27744, 2022.
+Raman et al. (2025)
+Vinod Raman, Hilal Asi, and Satyen Kale.Abon: Adaptive best-of-n alignment.arXiv preprint arXiv:2505.12050, 2025.
+Shinn et al. (2023)
+Noah Shinn, Federico Cassano, Beck Labash, Ashwin Gopinath, Karthik Narasimhan, and Shunyu Yao.Reflexion: Language agents with verbal reinforcement learning, 2023.URL https://arxiv. org/abs/2303.11366, 1, 2023.
+Snell et al. (2024)
+Charlie Snell, Jaehoon Lee, Kelvin Xu, and Aviral Kumar.Scaling llm test-time compute optimally can be more effective than scaling model parameters.arXiv preprint arXiv:2408.03314, 2024.
+Tsiourvas et al. (2025)
+Asterios Tsiourvas, Wei Sun, and Georgia Perakis.Causal llm routing: End-to-end regret minimization from observational data.arXiv preprint arXiv:2505.16037, 2025.
+Wang et al. (2023)
+Xuezhi Wang, Jason Wei, Dale Schuurmans, Quoc V Le, Ed H Chi, Sharan Narang, Aakanksha Chowdhery, and Denny Zhou.Self-consistency improves chain of thought reasoning in language models.In The Eleventh International Conference on Learning Representations (ICLR), 2023.
+Wu et al. (2025)
+Yuyang Wu, Yifei Wang, Ziyu Ye, Tianqi Du, Stefanie Jegelka, and Yisen Wang.When more is less: Understanding chain-of-thought length in llms.arXiv preprint arXiv:2502.07266, 2025.
+Yao et al. (2023)
+Shunyu Yao, Dian Yu, Jeffrey Zhao, Izhak Shafran, Tom Griffiths, Yuan Cao, and Karthik Narasimhan.Tree of thoughts: Deliberate problem solving with large language models.Advances in neural information processing systems, 36:11809–11822, 2023.
+Zhang et al. (2024)
+Kexun Zhang, Shang Zhou, Danqing Wang, William Yang Wang, and Lei Li.Scaling llm inference with optimized sample compute allocation.arXiv preprint arXiv:2410.22480, 2024.
+Appendix AAppendix
+A.1Accuracy Probe.
+Data Collection.
+To construct training data for the accuracy probe, we run multiple decoding strategies on a subset of NuminaMath CoT and record the results. For each input query,
+x
+, we execute a range of decoding strategies. Each run produces a set of candidate completions, which we label as correct or incorrect by comparing the extracted answer against the ground truth. LLM generation is stochastic, so a single run does not provide a stable estimate of method performance on a query. To obtain a more reliable supervision signal, we repeatedly sample completions from each decoding strategy to compute the empirical accuracy as the fraction of outputs matching the ground truth. This fraction serves as a soft label, providing a continuous value between 0 and 1 that reflects the expected success probability of strategy
+s
+ on query
+x
+.
+
+The resulting dataset consists of tuples,
+
+(
+s
+,
+x
+,
+features
+​
+(
+s
+,
+x
+)
+,
+a
+^
+s
+​
+(
+x
+)
+)
+where
+features
+​
+(
+s
+,
+x
+)
+ include both query-level embeddings and strategy parameters, and
+a
+^
+s
+​
+(
+x
+)
+ is the soft accuracy label obtained via repeated sampling.
+
+Embedding Backbones.
+We experiment with two different types of embeddings for encoding input queries:
+
+Qwen2.5-1.5B-Instruct. We pass each input through the generator model once and apply max pooling across the final hidden states to obtain a 1536-dimensional vector.
+
+BERT-base-uncased. We extract the 768-dimensional hidden state of the [CLS] token, following the conventional practice for sentence-level tasks.
+
+Contextual Features.
+In addition to embeddings, we concatenate the following features:
+
+• decoding parameters: number of generations, beam size, beam width, maximum iteration count.
+• method type: encoded as one-hot vectors for beam search, best-of-N, majority voting, naive, or weighted approaches.
+• query-level metadata: problem length (number of tokens).
+Model Architecture.
+The probe is a two-layer MLP with hidden dimensions of 200–200–1. GELU activations are applied between layers. The output layer produces a scalar logit, which is transformed into a probability via the logistic function.
+
+Training Dynamics.
+The probe is optimized using Adam with a learning rate of
+10
+−
+5
+, and trained against soft accuracy labels using a binary cross-entropy loss with logits. We train for up to 10 epochs with early stopping based on validation loss (patience = 1).
+
+Calibration.
+To ensure well-calibrated predictions, we apply Platt scaling on a held-out calibration set. We found this step to improve the alignment between predicted and empirical accuracies.
+
+Refer to caption
+Figure 3:The accuracy model achieves strong calibration with ground-truth correctness rates.
+Our resulting accuracy model achieves strong calibration with ground-truth correctness rates Fig.˜3.
+
+A.2Cost Measurements.
+A.2.1Latency.
+For each query, latency is measured as the total wall-clock time required for both generation and scoring under the chosen decoding strategy.
+
+Generation Time. We measure wall-clock latency for completion generation using vLLM. For each user query, we duplicate the templated prompt N times so that a single batch corresponds to one original query with N candidate completions. We set the generation batch size equal to the candidate count (i.e., batch size =
+N
+), which yields one vLLM generate call per query. For each query batch, we record the wall-clock time surrounding the call to llm.generate(). Scoring latency is measured starting from after the LLM is already loaded into memory.
+
+Scoring Time. Scoring latency is measured as the wall-clock time taken to score a list of candidate completions step, from the moment all candidates are available until the PRM returns scores. Scoring latency is measured starting from after the PRM is already loaded into memory.
+
+Hardware. All experiments are run on a single GPU NVIDIA A100 80GB.
+
+A.2.2Token Count.
+We record the length of the tokenized output sequence (using the model’s tokenizer) across all sequences generated throughout the run of a decoding strategy and aggregate these to obtain the total token count.
+
+Refer to caption
+Figure 4:Different decoding procedures lead to differences in compute costs (both token-count and wall-clock latency). For instance, we find that while beam-search is the highest accuracy method, it uses drastically more compute than the other methods, which calls for the need to route depending on query difficulty.
+A.3Query-Adaptive Strategy with BERT Embeddings for Accuracy Probe.
+We also experiment with using BERT embeddings for the accuracy probe. Compared to embeddings from Qwen2.5-1.5B-Instruct (1536 dimensions), BERT provides a more compact 768-dimensional representation. Although the query-adaptive strategy with BERT embeddings yields slightly lower performance, it still consistently outperforms static methods, demonstrating the robustness of our approach to the choice of embedding model.
+
+Refer to caption
+Figure 5:Accuracy–token trade-off for multiple inference-time scaling strategies when using BERT embeddings for training the difficulty probe.
+Refer to caption
+Figure 6:Accuracy–latency trade-off for multiple inference-time scaling strategies when using BERT embeddings for training the difficulty probe.
+A.4Query-Adaptive Strategy with Estimated vs. Ground-Truth Costs.
+Figure 7 and 8 show that the adaptive strategy using predicted token counts closely tracks the performance achieved with ground-truth values, with only minor degradation, indicating that the aggregate cost model provides reliable estimates on reasoning benchmarks.
+
+Refer to caption
+Figure 7:The adaptive strategy using the predicted token count (red) closely matches the performance achieved when using the true token count values (purple), indicating that the cost model provides reliable estimates.
+Refer to caption
+Figure 8:The adaptive strategy using the predicted latency (red) closely matches the performance achieved when using the true latency values (purple), indicating that the cost model provides reliable estimates.
+A.5Query-Adaptive Test Compute Strategy for Beam Search.
+Instead of selecting among different inference-scaling methods, here we evaluate the adaptive strategy in a single-method setting. Focusing on beam search, the strategy selects hyperparameters (beam size, width, and chunk size) to maximize utility under a user-defined budget constraint. On Math-500 (Fig.˜9), the adaptive strategy achieves higher accuracy at lower cost compared to fixed decoding configurations, demonstrating the effectiveness of utility-based adaptation even within a single inference-scaling method.
+
+Refer to caption
+Figure 9:Accuracy-token count trade-off for multiple decoding configurations of beam search. Each point represents a decoding configuration; yellow points represent the input-adaptive strategy, while blue points represent labeled static beam search configurations, labeled with (beam size, beam width, and chunk size). The adaptive strategy is able to achieve higher accuracy at lower cost compared to the static decoding settings.
