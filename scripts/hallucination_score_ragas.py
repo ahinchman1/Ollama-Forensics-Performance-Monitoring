@@ -1,16 +1,18 @@
 import os
 import sys
 import asyncio
-import json
+import logging
 from openai import AsyncOpenAI
 from ragas import SingleTurnSample
-from ragas.metrics.collections import Faithfulness
+from ragas.metrics import AspectCritic
 from ragas.llms import llm_factory
 
 os.environ["OPENAI_API_KEY"] = "local-ollama"
 
+logging.basicConfig(level=logging.INFO)
+
 ollama_client = AsyncOpenAI(
-    api_key="ollama",  # Placeholder token required by the client initialization
+    api_key="ollama",
     base_url="http://localhost:11434/v1"
 )
 
@@ -21,28 +23,15 @@ ragas_llm = llm_factory(
 )
 
 async def score_response(faithfulness_metric, sample):
-    contexts = sample.retrieved_contexts
-    if isinstance(contexts, str):
-        contexts = [contexts]
-
-    faithfulness_score = await faithfulness_metric.ascore(
-        user_input=sample.user_input,
-        response=sample.response,
-        retrieved_contexts=contexts
-    )
+    faithfulness_score = await faithfulness_metric.single_turn_ascore(sample)
 
     if hasattr(faithfulness_score, "value"):
         faithfulness_score = faithfulness_score.value
 
     hallucination_score = 1.0 - faithfulness_score
 
-    evaluation_report = {
-        "faithfulness_score": round(float(faithfulness_score), 4),
-        "hallucination_score": round(float(hallucination_score), 4),
-    }
-
     print(f"\nEvaluation Results:")
-    print(f"└── Faithfulness Score : r8qtc{faithfulness_score:.4f}")
+    print(f"└── Faithfulness Score : {faithfulness_score:.4f}")
     print(f"└── Hallucination Score: {hallucination_score:.4f}")
 
     print(f"RESULT_SCORE:{hallucination_score:.4f}")
@@ -55,7 +44,12 @@ def evaluate_ragas_score(prompt, source_context, generated_response):
         response=generated_response
     )
 
-    faithfulness_metric = Faithfulness(llm=ragas_llm)
+    faithfulness_metric = AspectCritic(
+        name="faithfulness_macro",
+        definition="Is the generated response strictly factual and completely supported by the retrieved context, without introducing outside information or contradictions?",
+        strictness=3,  # Number of internal self-consistency checks (1-3)
+        llm=ragas_llm
+    )
 
     score = asyncio.run(score_response(faithfulness_metric, sample))
     return score

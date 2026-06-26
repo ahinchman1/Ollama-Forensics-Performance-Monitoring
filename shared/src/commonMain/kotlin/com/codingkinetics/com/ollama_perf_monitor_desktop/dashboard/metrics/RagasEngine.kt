@@ -52,24 +52,30 @@ class RagasEngine(
             ).redirectErrorStream(true)
                 .start()
 
-            val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
+            println("Executing Ragas forensics script...")
+
+            val output = process.inputStream.bufferedReader().use {
+                val text = it.readText()
+                println(text)
+                text
+            }.trim()
             val exitCode = process.waitFor()
 
             if (exitCode == 0 && output.contains("RESULT_METRICS:")) {
-                val jsonString = output.substringAfter("RESULT_METRICS:").trim()
-                val faithfulness = jsonString.substringAfter("\"faithfulness_score\":")
-                    .substringBefore(",")
+                val hallucination = output.substringAfter("RESULT_SCORE:")
                     .trim()
                     .toDoubleOrNull() ?: 0.0
-                val hallucination = jsonString.substringAfter("\"hallucination_score\":")
-                    .substringBefore("}")
-                    .trim().toDoubleOrNull() ?: 0.0
+
+                val faithfulness = output.substringAfter("└── Faithfulness Score : ")
+                    .substringBefore("\n")
+                    .trim()
+                    .toDoubleOrNull() ?: 0.0
 
                 return Result.Success(
                     EvaluationResult(
                         faithfulnessScore = faithfulness,
-                        hallucinationIndex = hallucination,
-                    ),
+                        hallucinationIndex = hallucination
+                    )
                 )
             } else {
                 println("Metrics script crashed with exit code $exitCode. Output:\n$output")

@@ -15,7 +15,7 @@ data class PerformanceMetrics(
     val promptEvaluationDurationNanos: Long,
     val generatedTokensCount: Long,           // Translates from 'tabCount'
     val generationDurationNanos: Long,        // Translates from 'tabDuration'
-    val hallucinationIndex: Double = 0.0,
+    val hallucinationIndex: Double = 0.0,     // Ragas evaluation
     val faithfulnessScore: Double = 0.0,
 ) {
 

@@ -70,6 +70,7 @@ class DashboardViewModel(
             model = ollamaModel,
             prompt = prompt,
             onChunk = updateText { onEssayChunkReceived(it) },
+            getCurrentEssayText = { (_viewState.value as DashboardViewState.ActiveJob).essayText }
         )) {
             is Result.Success -> withContext(contextPool.mainDispatcher) {
                 println("Job completed.")

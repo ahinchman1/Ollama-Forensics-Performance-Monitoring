@@ -37,10 +37,12 @@ class OllamaJobOrchestrator(
         model: String,
         prompt: String,
         onChunk: (String) -> Unit,
+        getCurrentEssayText: () -> String,
     ): Result<PerformanceMetrics> = when (val ollamaData = jobRunner.runOllamaEssayJob(model, prompt, onChunk)) {
         is Result.Success -> {
             logCompletedStats(ollamaData.data)
-            evaluateRagasScore(prompt, ollamaData.data.response, ollamaData.data)
+            val retrieveCurrentEssayText = getCurrentEssayText()
+            evaluateRagasScore(prompt, retrieveCurrentEssayText, ollamaData.data)
         }
         is Result.Failure -> {
             ollamaData
