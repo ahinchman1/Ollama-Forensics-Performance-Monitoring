@@ -1,6 +1,6 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.mapper
 
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.EvaluationResult
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.EvaluationResult
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.BtopMetrics
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaResponseCompletedData
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics

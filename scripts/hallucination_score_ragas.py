@@ -55,12 +55,16 @@ def evaluate_ragas_score(prompt, source_context, generated_response):
     return score
 
 if __name__ == "__main__":
-    if len(sys.argv) < 4:
-        print("Error: Script requires 3 arguments: prompt, context, response.", file=sys.stderr)
-        sys.exit(1)
+    incoming_prompt = sys.argv[1] if len(sys.argv) > 1 else "Empty Prompt Telemetry"
+    incoming_context = sys.argv[2] if len(sys.argv) > 2 else "Empty Context Telemetry"
+    incoming_essay = sys.argv[3] if len(sys.argv) > 3 else "Model generation was empty or truncated."
 
     incoming_prompt = sys.argv[1]
     incoming_context = [sys.argv[2]]
     incoming_essay = sys.argv[3]
+
+    print(f"DEBUG_FORENSICS: Prompt Received  -> {incoming_prompt[:30]}...", file=sys.stderr)
+    print(f"DEBUG_FORENSICS: Context Received -> {incoming_context[:30]}...", file=sys.stderr)
+    print(f"DEBUG_FORENSICS: Essay Received   -> {incoming_essay[:30]}...", file=sys.stderr)
 
     evaluate_ragas_score(incoming_prompt, incoming_context, incoming_essay)

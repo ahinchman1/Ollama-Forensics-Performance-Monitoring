@@ -1,10 +1,10 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollama
 
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.RagasEngine
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.RagasEngine
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.BtopMetricsCollector
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.commandExists
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.mapper.mapOllamaResponseToDomain
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.EvaluationResult
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.EvaluationResult
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaResponseCompletedData
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics

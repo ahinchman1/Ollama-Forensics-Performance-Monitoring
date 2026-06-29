@@ -8,7 +8,6 @@ plugins {
 kotlin {
     jvm()
 
-
     sourceSets {
         commonMain.dependencies {
             implementation(project.dependencies.platform("org.jetbrains.kotlin:kotlin-bom:${libs.versions.kotlin.get()}"))
@@ -21,6 +20,10 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.ktor.core)
+            implementation(libs.ktor.cio)
+            implementation(libs.ktor.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
 
             implementation(fileTree("libs") { include("*.jar") })
         }
