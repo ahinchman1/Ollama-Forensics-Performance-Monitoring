@@ -1,7 +1,7 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollama
 
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.RagasEngine
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.BtopMetricsCollector
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.MetricsCollector
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.commandExists
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.mapper.mapOllamaResponseToDomain
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.EvaluationResult
@@ -15,7 +15,7 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
 
 class OllamaJobOrchestrator(
     val jobRunner: OllamaJobRunner,
-    val btopMetrics: BtopMetricsCollector,
+    val metricsCollector: MetricsCollector,
     val ragasEngine: RagasEngine,
 ) {
 
@@ -62,30 +62,25 @@ class OllamaJobOrchestrator(
         prompt: String,
         data: OllamaResponseCompletedData,
         ragasEvaluation: EvaluationResult,
-    ): Result<PerformanceMetrics> =
-        when (val parsedBtopMetrics = btopMetrics.parseBtopData()) {
-            is Result.Success -> {
-                val finalMetrics = mapOllamaResponseToDomain(
-                    prompt = prompt,
-                    responsePayload = data,
-                    btopSnapshot = parsedBtopMetrics.data,
-                    ragasEvaluation
-                )
+    ): Result<PerformanceMetrics> {
+        val peakMetrics = metricsCollector.getPeakMetricsCollected()
+        val finalMetrics = mapOllamaResponseToDomain(
+            prompt = prompt,
+            responsePayload = data,
+            btopSnapshot = peakMetrics,
+            ragasEvaluation
+        )
 
-                btopMetrics.stopTmuxDashboard()
-                println("Final Metrics: $finalMetrics")
-                finalMetrics
-            }
-            is Result.Failure -> {
-                parsedBtopMetrics
-            }
-        }
+        metricsCollector.stopStopDashboard()
+        println("Final Metrics: $finalMetrics")
+        return finalMetrics
+    }
 
     private fun  logCompletedStats(data: OllamaResponseCompletedData) {
         println("------ Ollama Response Completed Data ----")
         println(data.toString())
 
-        val rawStats = btopMetrics.captureTmuxPane()
+        val rawStats = metricsCollector.captureMetricsInWindowPane()
         println("------BTOP Metrics Captured ----")
         println(rawStats)
 
@@ -93,14 +88,14 @@ class OllamaJobOrchestrator(
 
     internal fun startDashboard() {
         runCommandIgnoringErrors(tmuxExecutable, "kill-session", "-t", tmuxSessionName)
-        btopMetrics.startTmuxDashboard()
+        metricsCollector.startMetricsDashboard()
     }
 
     // TODO create a model object that captures graph state live as well
     internal fun captureTmuxPane(targetPane: String): String {
-        val cpuGraph = btopMetrics.extractCpuGraph(targetPane)
+        val cpuGraph = metricsCollector.extractCpuGraph(targetPane)
         // TODO now do something with the graph like extract the data
-        return btopMetrics.captureTmuxPane(targetPane)
+        return metricsCollector.captureMetricsInWindowPane(targetPane)
     }
 
     internal fun cleanupRuntimeResources() {

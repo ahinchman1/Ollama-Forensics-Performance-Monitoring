@@ -227,13 +227,13 @@ class DashboardViewModel(
 
     companion object {
         val prompt = """
-            Write a clear technical essay about JVM concurrency and local AI inference.
-            Focus on:
-             - why local inference is useful for experimentation
-             - how JVM concurrency affects responsiveness
-             - why separating monitoring panels from generated prose improves the UI
-             - how observability helps compare CPU, memory, GPU, and process behavior
-    
-            Keep the tone practical, technical, and research-oriented.""".trimIndent()
+            Project Architecture Constraints:
+                We are building a highly concurrent Kotlin transaction engine. It needs to be fast, handle 
+                signature verification safely in the background, and drop things if it gets too overloaded 
+                so it doesn't crash the JVM
+                    
+                Prompt
+                    Write the complete production implementation. Make sure it explicitly uses a single-threaded event loop for the state changes and applies strict backpressure.
+                    """.trimIndent()
     }
 }

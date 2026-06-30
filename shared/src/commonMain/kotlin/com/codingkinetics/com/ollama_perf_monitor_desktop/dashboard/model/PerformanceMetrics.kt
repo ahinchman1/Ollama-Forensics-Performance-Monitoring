@@ -6,7 +6,7 @@ import java.util.Locale
 data class PerformanceMetrics(
     val prompt: String,
     val output: String,
-    val osMetrics: BtopMetrics,
+    val osMetrics: OSMetrics,
     val loadDurationNanos: Long,              // Keep raw for precise calculations/sorting
     val totalDurationNanos: Long,             // Keep raw for precise calculations/sorting
     val done: Boolean,
@@ -76,7 +76,7 @@ data class PerformanceMetrics(
             
             DIAGNOSTICS & RESEARCH METRICS:
             --------------------------------------------------------------------
-            Hallucination Index   : ${hallucinationIndex.ifZero { "Pending Ragas Evaluation" }}
+            Hallucination Index   : $hallucinationIndex
             Underlying OS Metrics : $osMetrics
             ====================================================================
         """.trimIndent()
@@ -84,17 +84,3 @@ data class PerformanceMetrics(
 }
 
 private fun Double.ifZero(ifZero: () -> String) = if (this == 0.0) ifZero() else toString()
-
-data class BtopMetrics(
-    val temperature: Int,
-    val processCpuConsumption: Long,
-    val cpuTelemetry: String,
-    val cores: List<Core> = listOf(),
-    val cpuGraph: List<String> = listOf(),
-    val threadCount: Int = 0,
-)
-
-data class Core(
-    val name: String,
-    val temperature: Int,
-)

@@ -9,14 +9,7 @@ val tmuxExecutable = resolveExecutable("tmux")
 val ollamaExecutable = resolveExecutable("ollama")
 val btopExecutable = resolveExecutable("btop")
 
-val scriptPath = "scripts/hallucination_score_ragas.py"
-val ragasExecutable = if (File(scriptPath).exists()) {
-    resolveExecutable(scriptPath)
-} else {
-    resolveExecutable("../$scriptPath")
-}
-
-internal fun ProcessBuilder.withCliPath(): ProcessBuilder {
+fun ProcessBuilder.withCliPath(): ProcessBuilder {
     val env = this.environment()
     val systemPath = System.getenv("PATH") ?: "/usr/bin:/bin"
     val homebrewPaths = "/opt/homebrew/bin:/usr/local/bin"
@@ -56,7 +49,7 @@ internal fun resolveExecutable(command: String): String {
     }
 }
 
-internal fun runCommandIgnoringErrors(vararg command: String) {
+fun runCommandIgnoringErrors(vararg command: String) {
     runCatching {
         ProcessBuilder(*command).withCliPath().start().waitFor(500, TimeUnit.MILLISECONDS)
     }.onFailure { e ->
@@ -64,7 +57,7 @@ internal fun runCommandIgnoringErrors(vararg command: String) {
     }
 }
 
-internal fun commandExists(command: String): Boolean {
+fun commandExists(command: String): Boolean {
     val executable = resolveExecutable(command)
     if (File(executable).isAbsolute && File(executable).exists()) {
         return true
@@ -78,13 +71,4 @@ internal fun commandExists(command: String): Boolean {
     } catch (_: Exception) {
         false
     }
-}
-
-internal fun List<Int>.roverage(): Double = if (isEmpty()) 0.0 else this.sum().toDouble() / this.size
-
-internal fun Long.nanosToSeconds(): Double = try {
-    this / 1_000_000_000.0
-} catch (e: Exception) {
-    println("Unable to capture nanos. Cause: $e")
-    0.0
 }

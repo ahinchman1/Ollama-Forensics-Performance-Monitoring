@@ -1,25 +1,20 @@
-package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics
+package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard
 
-import com.codingkinetics.com.ollama_perf_monitor_desktop.util.btopExecutable
-import com.codingkinetics.com.ollama_perf_monitor_desktop.util.commandExists
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.BtopMetrics
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.MetricsCollector
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.Core
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuSnapshotData
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OSMetrics
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.btopExecutable
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.commandExists
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.isBraille
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.runCommandIgnoringErrors
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxExecutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.withCliPath
-import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
+import kotlin.collections.sortedBy
 
-interface BtopMetricsCollector {
-    fun captureTmuxPane(targetPane: String = "${tmuxSessionName}:0.0"): String
-    fun startTmuxDashboard()
-    fun stopTmuxDashboard()
-    fun extractCpuGraph(rawBtopOutput: String): List<String>
-    fun parseBtopData(): Result<BtopMetrics>
-}
-
-class BtopMetricsCollectorImpl: BtopMetricsCollector {
+class BtopMetricsCollector: MetricsCollector {
 
     private val uiBorderRegex = Regex("[│┤┐└┴┬├─┼┘┌]")
     private val coreRegex = Regex("""C(\d+)\s+\d+%\s+(\d+)°C""")
@@ -27,7 +22,14 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
     private val ollamaProcessRegex = Regex("""\d+\s+ollama\s+\S+\s+\S+\s+.*?(\d+\.\d+)\s*""")
     private val threadRegex = Regex("""(\d+)/(\d+)""")
 
-    override fun captureTmuxPane(targetPane: String): String {
+    private var peakTemperature = 0
+    private var peakProcessCpuConsumption = 0L
+    private var peakCpuTelemetry = "PID: 0 | CPU: 0.0% | RAM Used: 0.0G"
+    private var peakCores = mutableListOf<Core>()
+    private var peakCpuGraph = mutableListOf<String>()
+    private var peakThreadCount = 0
+
+    override fun captureMetricsInWindowPane(targetPane: String): String {
         return try {
             val process = ProcessBuilder(tmuxExecutable, "capture-pane", "-p", "-t", targetPane, "-S", "-80")
                 .withCliPath()
@@ -36,6 +38,7 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
             process.inputStream.bufferedReader().use {
                 val text =  it.readText()
                 print(text)
+                parseBtopDataFromString(text)
                 text
             }.trimEnd()
         } catch (e: Exception) {
@@ -44,7 +47,7 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
         }
     }
 
-    override fun startTmuxDashboard() {
+    override fun startMetricsDashboard() {
         try {
             val initProcess = ProcessBuilder(
                 tmuxExecutable,
@@ -97,12 +100,12 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
         }
     }
 
-    override fun stopTmuxDashboard() {
+    override fun stopStopDashboard() {
         runCommandIgnoringErrors(tmuxExecutable, "kill-session", "-t", tmuxSessionName)
     }
 
-    override fun parseBtopData(): Result<BtopMetrics> {
-        val rawText = captureTmuxPane()
+    override fun parseBtopData(): Result<OSMetrics> {
+        val rawText = captureMetricsInWindowPane()
 
         println("DEBUG: Raw Text received from Tmux: '$rawText'")
 
@@ -121,7 +124,7 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
         }
     }
 
-    internal fun parseBtopDataFromString(rawText: String): Result<BtopMetrics> {
+    internal fun parseBtopDataFromString(rawText: String): Result<OSMetrics> {
         try {
             val cpuGraph = extractCpuGraph(rawText)
             val cleanText = rawText.sanitizeUIBorders()
@@ -133,7 +136,9 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
             val coreTemps = getCoreTemperatures(cpuStats)
             val threadCount = captureOllamaThreadCount()
 
-            val metrics = BtopMetrics(
+            getPeakMetrics(cpuStats, coreTemps, threadCount, telemetry, cpuGraph)
+
+            val metrics = OSMetrics(
                 cores = cpuStats.cores.sortedBy { it.name.substringAfter(" ").toIntOrNull() ?: 0 },
                 temperature = coreTemps,
                 processCpuConsumption = cpuStats.processCpu,
@@ -141,11 +146,46 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
                 cpuTelemetry = telemetry,
                 threadCount = threadCount,
             )
+
+
             println("Parsed metrics: $metrics")
             return Result.Success(metrics)
         } catch (e: Exception) {
             println("Unable to get BtopMetrics. Cause of error: $e")
             return Result.Failure(e)
+        }
+    }
+
+    override fun getPeakMetricsCollected(): OSMetrics {
+        return OSMetrics(
+            temperature = peakTemperature,
+            processCpuConsumption = peakProcessCpuConsumption,
+            cpuTelemetry = peakCpuTelemetry,
+            cores = peakCores.sortedBy { it.name.substringAfter(" ").toIntOrNull() ?: 0 },
+            cpuGraph = peakCpuGraph,
+            threadCount = peakThreadCount
+        )
+    }
+
+    private fun getPeakMetrics(
+        cpuStats: CpuSnapshotData,
+        coreTemps: Int,
+        threadCount: Int,
+        telemetry: String,
+        cpuGraph: List<String>,
+    ) {
+        if (cpuStats.processCpu >= peakProcessCpuConsumption || coreTemps >= peakTemperature) {
+            peakProcessCpuConsumption = maxOf(peakProcessCpuConsumption, cpuStats.processCpu)
+            peakTemperature = maxOf(peakTemperature, coreTemps)
+            peakThreadCount = maxOf(peakThreadCount, threadCount)
+            peakCpuTelemetry = telemetry
+
+            if (cpuStats.cores.isNotEmpty()) {
+                peakCores = cpuStats.cores.toMutableList()
+            }
+            if (cpuGraph.isNotEmpty()) {
+                peakCpuGraph = cpuGraph.toMutableList()
+            }
         }
     }
 
@@ -181,12 +221,13 @@ class BtopMetricsCollectorImpl: BtopMetricsCollector {
         return graphLines
     }
 
-    /**
-     * Extension function to verify if a character belongs to the Unicode Braille Patterns block.
-     * Unicode range: U+2800 – U+28FF
-     */
-    fun Char.isBraille(): Boolean {
-        return this.code in 0x2800..0x28FF
+    override fun resetPeakMetrics() {
+        peakTemperature = 0
+        peakProcessCpuConsumption = 0L
+        peakCpuTelemetry = "PID: 0 | CPU: 0.0% | RAM Used: 0.0G"
+        peakCores.clear()
+        peakCpuGraph.clear()
+        peakThreadCount = 0
     }
 
     private fun parseGlobalCPUTempAndLoad(lines: List<String>): CpuSnapshotData {
