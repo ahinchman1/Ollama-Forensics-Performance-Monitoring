@@ -14,12 +14,21 @@ sealed interface DashboardViewState {
         val gpuPanel: String = "Initializing system metrics...",
         val essayText: String = "Preparing Ollama pre-fill..."
     ) : DashboardViewState
-    data class Error(
-        val errorMessage: String,
-        val tmuxPath: String,
-        val btopPath: String,
-        val ollamaPath: String,
-    ) : DashboardViewState
+
+    sealed interface PipelineFailure : DashboardViewState {
+        val errorMessage: String
+        val installHint: String
+
+        data class MissingDependency(
+            override val errorMessage: String,
+            override val installHint: String,
+        ) : PipelineFailure
+
+        data class ExecutionError(
+            override val errorMessage: String,
+            override val installHint: String = ""
+        ) : PipelineFailure
+    }
 
     data class CompletedJob(
         val statusMessage: String,

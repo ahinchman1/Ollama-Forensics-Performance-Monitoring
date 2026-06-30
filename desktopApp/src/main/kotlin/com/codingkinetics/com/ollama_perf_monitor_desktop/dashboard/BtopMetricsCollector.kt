@@ -101,11 +101,11 @@ class BtopMetricsCollector: MetricsCollector {
         }
     }
 
-    override fun stopStopDashboard() {
-        runCommandIgnoringErrors(tmuxExecutable, "kill-session", "-t", tmuxSessionName)
-    }
+override fun stopMetricsDashboard() {
+       runCommandIgnoringErrors(tmuxExecutable, "kill-session", "-t", tmuxSessionName)
+   }
 
-    override fun parseBtopData(): Result<OSMetrics> {
+    override suspend fun parseBtopData(): Result<OSMetrics> {
         val rawText = captureMetricsInWindowPane()
 
         if (rawText.startsWith("Pane error")) {

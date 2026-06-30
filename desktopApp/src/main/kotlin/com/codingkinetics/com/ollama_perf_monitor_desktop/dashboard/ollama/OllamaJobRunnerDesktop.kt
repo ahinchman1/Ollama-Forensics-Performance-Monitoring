@@ -1,5 +1,6 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollama
 
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaJobResult
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaResponseCompletedData
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaStreamChunk
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
@@ -8,12 +9,20 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.util.runCommandIgnorin
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.withCliPath
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URL
+
+@Serializable
+internal data class OllamaGenerateRequest(
+    val model: String,
+    val prompt: String,
+    val stream: Boolean = true,
+)
 
 class OllamaJobRunnerDesktop: OllamaJobRunner {
 
@@ -89,7 +98,7 @@ class OllamaJobRunnerDesktop: OllamaJobRunner {
         model: String,
         prompt: String,
         onChunk: (String) -> Unit,
-    ): Result<OllamaResponseCompletedData> {
+    ): Result<OllamaJobResult> {
         var connection: HttpURLConnection? = null
         return try {
             connection = withContext(Dispatchers.IO) {
@@ -104,19 +113,9 @@ class OllamaJobRunnerDesktop: OllamaJobRunner {
 
             connection.setChunkedStreamingMode(0)
 
-            val escapedPrompt = prompt.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
+            val request = OllamaGenerateRequest(model = model, prompt = prompt, stream = true)
+            val jsonPayload = jsonWorker.encodeToString(request)
 
-            val jsonPayload = """
-                {
-                  "model": "$model",
-                  "prompt": "$escapedPrompt",
-                  "stream": true
-                }
-                """.trimIndent()
-
-            // Fire the payload into the network socket
             OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { writer ->
                 writer.write(jsonPayload)
                 writer.flush()
@@ -128,10 +127,10 @@ class OllamaJobRunnerDesktop: OllamaJobRunner {
                 error("Ollama REST API returned HTTP $responseCode: $errorText")
             }
 
-            var finalResultData: OllamaResponseCompletedData? = null
+            var finalResultData: OllamaJobResult? = null
 
             streamRawJsonChunks(connection, onChunk) { output, completedData ->
-                finalResultData = completedData
+                finalResultData = OllamaJobResult(output, completedData)
             }
 
             finalResultData?.let {
@@ -167,9 +166,9 @@ class OllamaJobRunnerDesktop: OllamaJobRunner {
                     }
 
                     if (chunk.done) {
-                        val output = output.toString()
+                        val outputStr = output.toString()
                         val finalData = jsonWorker.decodeFromString<OllamaResponseCompletedData>(currentLine)
-                        onAiJobComplete(output, finalData)
+                        onAiJobComplete(outputStr, finalData)
                     }
                 }.onFailure { e ->
                     println("Skipping malformed or incomplete JSON frame: $currentLine. Error: ${e.message}")

@@ -37,14 +37,14 @@ fun DashboardView(viewModel: DashboardViewModel) {
     val currentStatusMessage = when (val state = uiState) {
         is DashboardViewState.Idle -> "System Ready. Infrastructure offline."
         is DashboardViewState.ActiveJob -> state.statusMessage
-        is DashboardViewState.Error -> "FAILURE: ${state.errorMessage}"
+        is DashboardViewState.PipelineFailure -> "FAILURE: ${state.errorMessage}"
         is DashboardViewState.CompletedJob -> state.statusMessage
     }
 
     val currentMetricsContent = when (val state = uiState) {
         is DashboardViewState.ActiveJob -> state.metricsPanel
         is DashboardViewState.CompletedJob -> state.metricsPanel
-        is DashboardViewState.Error -> "Environment Failure:\ntmux target broken or crashed."
+        is DashboardViewState.PipelineFailure -> "Environment Failure:\n${state.installHint}"
         else -> "System Offline - Transitioning to Idle state."
     }
 
@@ -54,7 +54,7 @@ fun DashboardView(viewModel: DashboardViewModel) {
             state.gpuPanel
         }
         is DashboardViewState.ActiveJob -> state.gpuPanel
-        is DashboardViewState.Error -> "Diagnostics:\ntmux: ${state.tmuxPath}\nollama: ${state.ollamaPath}"
+        is DashboardViewState.PipelineFailure -> "Diagnostics:\n${state.installHint}"
         else -> "System Offline - Transitioning to Idle state."
     }
 

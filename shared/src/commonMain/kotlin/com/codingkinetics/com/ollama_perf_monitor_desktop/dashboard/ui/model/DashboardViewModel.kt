@@ -4,11 +4,8 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollama.Ollam
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
-import com.codingkinetics.com.ollama_perf_monitor_desktop.util.btopExecutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.nanosToSeconds
-import com.codingkinetics.com.ollama_perf_monitor_desktop.util.ollamaExecutable
-import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxExecutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,15 +45,19 @@ class DashboardViewModel(
                     getPerformanceData(onEssayChunkReceived)
 
                 }
-                is Result.Failure -> _viewState.update {
+                is Result.Failure -> withContext(contextPool.mainDispatcher) {
                     val failureMessage = checkDep.exception.message ?: checkDep.exception::class.simpleName
                     println(failureMessage)
-                    DashboardViewState.Error(
-                        failureMessage ?: "Unknown error",
-                        tmuxExecutable,
-                        btopExecutable,
-                        ollamaExecutable,
-                    )
+                    val installHint = when (checkDep.exception) {
+                        is IllegalStateException -> checkDep.exception.message ?: ""
+                        else -> "Unknown error"
+                    }
+                    _viewState.update {
+                        DashboardViewState.PipelineFailure.MissingDependency(
+                            errorMessage = failureMessage ?: "Unknown error",
+                            installHint = installHint,
+                        )
+                    }
                 }
             }
         }
@@ -67,7 +68,6 @@ class DashboardViewModel(
             model = ollamaModel,
             prompt = prompt,
             onChunk = updateText { onEssayChunkReceived(it) },
-            getCurrentEssayText = { (_viewState.value as DashboardViewState.ActiveJob).essayText }
         )) {
             is Result.Success -> withContext(contextPool.mainDispatcher) {
                 println("Job completed.")
@@ -79,11 +79,8 @@ class DashboardViewModel(
                 val e = performanceMetrics.exception
                 println("Unable to get performance data. Cause: ${e.message}")
                 _viewState.update {
-                    DashboardViewState.Error(
-                        performanceMetrics.exception.message ?: "Unknown error",
-                        tmuxExecutable,
-                        btopExecutable,
-                        ollamaExecutable,
+                    DashboardViewState.PipelineFailure.ExecutionError(
+                        errorMessage = performanceMetrics.exception.message ?: "Unknown error",
                     )
                 }
             }
@@ -184,7 +181,7 @@ class DashboardViewModel(
             ACTIVE CORES DETECTED: ${metrics.osMetrics.cores.size}
             
             [ CORE TELEMETRY DETAILED BREAKDOWN ]
-            ${metrics.osMetrics.cores.joinToString("\n\t\t") { "├── ${it.name}: ${it.temperature}°C" }}
+            ${metrics.osMetrics.cores.joinToString("\n") { "├── ${it.name}: ${it.temperature}°C" }}
             ================================================================================
         """.trimIndent()
 

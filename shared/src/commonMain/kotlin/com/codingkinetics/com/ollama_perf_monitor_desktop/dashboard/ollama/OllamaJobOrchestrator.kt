@@ -1,10 +1,12 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollama
 
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.RagasEngine
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.MetricsCollector
-import com.codingkinetics.com.ollama_perf_monitor_desktop.util.commandExists
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.mapper.mapOllamaResponseToDomain
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.EvaluationResult
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.RagasEngine
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.MetricsCollector
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaJobResult
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaResponseCompletedData
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
@@ -12,19 +14,24 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.util.flatMap
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.runCommandIgnoringErrors
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxExecutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.commandExists
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class OllamaJobOrchestrator(
-    val jobRunner: OllamaJobRunner,
-    val metricsCollector: MetricsCollector,
-    val ragasEngine: RagasEngine,
+    private val jobRunner: OllamaJobRunner,
+    private val metricsCollector: MetricsCollector,
+    private val ragasEngine: RagasEngine,
+    private val coroutineContextProvider: CoroutineContextProvider = CoroutineContextProviderImpl(),
+    private val scope: CoroutineScope? = null,
 ) {
     private var metricsSamplingJob: Job? = null
+
+    private val samplingScope: CoroutineScope
+        get() = scope ?: CoroutineScope(coroutineContextProvider.ioDispatcher)
 
     internal fun checkMonitoringToolDependency(): Result<Unit> {
         return when {
@@ -44,7 +51,6 @@ class OllamaJobOrchestrator(
         model: String,
         prompt: String,
         onChunk: (String) -> Unit,
-        getCurrentEssayText: () -> String,
     ): Result<PerformanceMetrics> {
         metricsCollector.resetPeakMetrics()
         startMetricsSampling()
@@ -52,8 +58,7 @@ class OllamaJobOrchestrator(
             is Result.Success -> {
                 stopMetricsSampling()
                 logCompletedStats(ollamaData.data)
-                val retrieveCurrentEssayText = getCurrentEssayText()
-                evaluateRagasScore(prompt, retrieveCurrentEssayText, ollamaData.data)
+                evaluateRagasScore(prompt, ollamaData.data)
             }
             is Result.Failure -> {
                 stopMetricsSampling()
@@ -64,11 +69,10 @@ class OllamaJobOrchestrator(
 
     private suspend fun evaluateRagasScore(
         prompt: String,
-        response: String,
-        ollamaData: OllamaResponseCompletedData,
+        jobResult: OllamaJobResult,
     ): Result<PerformanceMetrics> =
-        ragasEngine.calculateHallucinationScore(prompt, response).flatMap { evalData ->
-            getPerformanceData(prompt, ollamaData, evalData)
+        ragasEngine.calculateHallucinationScore(prompt, jobResult.generatedText).flatMap { evalData ->
+            getPerformanceData(prompt, jobResult.completedData, evalData)
         }
 
     private fun getPerformanceData(
@@ -84,16 +88,16 @@ class OllamaJobOrchestrator(
             ragasEvaluation
         )
 
-        metricsCollector.stopStopDashboard()
+        metricsCollector.stopMetricsDashboard()
         println("Final Metrics: $finalMetrics")
         return finalMetrics
     }
 
-    private fun  logCompletedStats(data: OllamaResponseCompletedData) {
+    private fun logCompletedStats(data: OllamaJobResult) {
         println("------ Ollama Response Completed Data ----")
-        println(data.toString())
+        println(data.completedData.toString())
 
-        val rawStats = metricsCollector.captureMetricsInWindowPane()
+        val rawStats = metricsCollector.captureMetricsInWindowPane("${tmuxSessionName}:0.0")
         println("------BTOP Metrics Captured ----")
         println(rawStats)
 
@@ -106,11 +110,9 @@ class OllamaJobOrchestrator(
 
     internal fun startMetricsSampling() {
         metricsSamplingJob?.cancel()
-        metricsSamplingJob = CoroutineScope(Dispatchers.IO).launch {
-            delay(100)
+        metricsSamplingJob = samplingScope.launch {
             while (isActive) {
                 metricsCollector.parseBtopData()
-                delay(100)
             }
         }
     }
@@ -128,6 +130,8 @@ class OllamaJobOrchestrator(
     }
 
     internal fun cleanupRuntimeResources() {
+        stopMetricsSampling()
+        metricsCollector.stopMetricsDashboard()
         jobRunner.cleanupRuntimeResources()
     }
 }

@@ -20,6 +20,6 @@ data class OllamaResponseCompletedData(
     @SerialName("load_duration") val loadDuration: Long = 0L,
     @SerialName("prompt_eval_count") val promptEvalCount: Long = 0L,
     @SerialName("prompt_eval_duration") val promptEvalDuration: Long = 0L,
-    @SerialName("eval_count") val tabCount: Long,
-    @SerialName("eval_duration") val tabDuration: Long,
+    @SerialName("eval_count") val generatedTokenCount: Long,
+    @SerialName("eval_duration") val generationDuration: Long,
 )

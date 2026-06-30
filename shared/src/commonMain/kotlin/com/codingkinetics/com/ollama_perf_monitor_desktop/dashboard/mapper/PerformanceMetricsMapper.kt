@@ -22,8 +22,8 @@ internal fun mapOllamaResponseToDomain(
             doneReason = responsePayload.doneReason,
             promptTokensCount = responsePayload.promptEvalCount,
             promptEvaluationDurationNanos = responsePayload.promptEvalDuration,
-            generatedTokensCount = responsePayload.tabCount,
-            generationDurationNanos = responsePayload.tabDuration,
+            generatedTokensCount = responsePayload.generatedTokenCount,
+            generationDurationNanos = responsePayload.generationDuration,
             hallucinationIndex = ragasEvaluation.hallucinationIndex,
             faithfulnessScore = ragasEvaluation.faithfulnessScore,
         )
