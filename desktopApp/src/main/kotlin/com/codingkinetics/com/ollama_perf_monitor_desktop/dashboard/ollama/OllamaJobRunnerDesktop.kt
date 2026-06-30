@@ -3,11 +3,12 @@ package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollama
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaJobResult
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaResponseCompletedData
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaStreamChunk
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.ollamaExecutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.runCommandIgnoringErrors
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.withCliPath
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -18,13 +19,15 @@ import java.net.URI
 import java.net.URL
 
 @Serializable
-internal data class OllamaGenerateRequest(
+private data class OllamaGenerateRequest(
     val model: String,
     val prompt: String,
     val stream: Boolean = true,
 )
 
-class OllamaJobRunnerDesktop: OllamaJobRunner {
+class OllamaJobRunnerDesktop(
+    private val coroutineContextProvider: CoroutineContextProvider = CoroutineContextProviderImpl(),
+): OllamaJobRunner {
 
     private var serverProcess: Process? = null
 
@@ -98,43 +101,46 @@ class OllamaJobRunnerDesktop: OllamaJobRunner {
         model: String,
         prompt: String,
         onChunk: (String) -> Unit,
+        coroutineContextProvider: CoroutineContextProvider,
     ): Result<OllamaJobResult> {
         var connection: HttpURLConnection? = null
         return try {
-            connection = withContext(Dispatchers.IO) {
+            connection = withContext(coroutineContextProvider.ioDispatcher) {
                 ollamaStreamingEndpointUrl.openConnection()
             } as HttpURLConnection
 
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.doOutput = true
-            connection.connectTimeout = 5000
-            connection.readTimeout = 60000
+            withContext(coroutineContextProvider.ioDispatcher) {
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.doOutput = true
+                connection.connectTimeout = 5000
+                connection.readTimeout = 60000
 
-            connection.setChunkedStreamingMode(0)
+                connection.setChunkedStreamingMode(0)
 
-            val request = OllamaGenerateRequest(model = model, prompt = prompt, stream = true)
-            val jsonPayload = jsonWorker.encodeToString(request)
+                val request = OllamaGenerateRequest(model = model, prompt = prompt, stream = true)
+                val jsonPayload = jsonWorker.encodeToString(request)
 
-            OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { writer ->
-                writer.write(jsonPayload)
-                writer.flush()
-            }
+                OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { writer ->
+                    writer.write(jsonPayload)
+                    writer.flush()
+                }
 
-            val responseCode = connection.responseCode
-            if (responseCode != 200) {
-                val errorText = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Unknown Error"
-                error("Ollama REST API returned HTTP $responseCode: $errorText")
-            }
+                val responseCode = connection.responseCode
+                if (responseCode != 200) {
+                    val errorText = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Unknown Error"
+                    error("Ollama REST API returned HTTP $responseCode: $errorText")
+                }
 
-            var finalResultData: OllamaJobResult? = null
+                var finalResultData: OllamaJobResult? = null
 
-            streamRawJsonChunks(connection, onChunk) { output, completedData ->
-                finalResultData = OllamaJobResult(output, completedData)
-            }
+                streamRawJsonChunks(connection, onChunk) { output, completedData ->
+                    finalResultData = OllamaJobResult(generatedText = output, completedData = completedData)
+                }
 
-            finalResultData?.let {
-               Result.Success(it)
+                finalResultData
+            }?.let {
+                Result.Success(it)
             } ?: Result.Failure(
                 IllegalStateException("Stream finished without generating completion records."),
             )

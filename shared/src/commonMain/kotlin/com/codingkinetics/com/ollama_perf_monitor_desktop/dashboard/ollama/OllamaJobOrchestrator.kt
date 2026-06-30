@@ -8,7 +8,7 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.Ollama
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaResponseCompletedData
+
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.flatMap
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.runCommandIgnoringErrors
@@ -54,7 +54,7 @@ class OllamaJobOrchestrator(
     ): Result<PerformanceMetrics> {
         metricsCollector.resetPeakMetrics()
         startMetricsSampling()
-        return when (val ollamaData = jobRunner.runOllamaEssayJob(model, prompt, onChunk)) {
+        return when (val ollamaData = jobRunner.runOllamaEssayJob(model, prompt, onChunk, coroutineContextProvider)) {
             is Result.Success -> {
                 stopMetricsSampling()
                 logCompletedStats(ollamaData.data)
@@ -72,18 +72,18 @@ class OllamaJobOrchestrator(
         jobResult: OllamaJobResult,
     ): Result<PerformanceMetrics> =
         ragasEngine.calculateHallucinationScore(prompt, jobResult.generatedText).flatMap { evalData ->
-            getPerformanceData(prompt, jobResult.completedData, evalData)
+            getPerformanceData(prompt, jobResult, evalData)
         }
 
     private fun getPerformanceData(
         prompt: String,
-        data: OllamaResponseCompletedData,
+        jobResult: OllamaJobResult,
         ragasEvaluation: EvaluationResult,
     ): Result<PerformanceMetrics> {
         val peakMetrics = metricsCollector.getPeakMetricsCollected()
         val finalMetrics = mapOllamaResponseToDomain(
             prompt = prompt,
-            responsePayload = data,
+            ollamaJobResult = jobResult,
             btopSnapshot = peakMetrics,
             ragasEvaluation
         )

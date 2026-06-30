@@ -1,11 +1,11 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.model
 
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.formatter.PerformanceMetricsFormatter
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollama.OllamaJobOrchestrator
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
-import com.codingkinetics.com.ollama_perf_monitor_desktop.util.nanosToSeconds
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +19,7 @@ class DashboardViewModel(
     private val scope: CoroutineScope,
     private val ollamaJobOrchestrator: OllamaJobOrchestrator,
     private val contextPool: CoroutineContextProvider = CoroutineContextProviderImpl(),
+    private val metricsFormatter: PerformanceMetricsFormatter = PerformanceMetricsFormatter(),
 ) {
     private val _viewState = MutableStateFlow<DashboardViewState>(DashboardViewState.Idle)
     val viewState: StateFlow<DashboardViewState> = _viewState.asStateFlow()
@@ -40,7 +41,7 @@ class DashboardViewModel(
                     withContext(contextPool.mainImmediateDispatcher) {
                         updateToActiveJob()
                     }
-                    synchronousRefresh()
+                    refreshMonitoringPanels()
 
                     getPerformanceData(onEssayChunkReceived)
 
@@ -124,10 +125,12 @@ class DashboardViewModel(
     }
 
     fun clearRuntimeResources() {
-        stopPipeline()
+        scope.launch(contextPool.ioDispatcher) {
+            ollamaJobOrchestrator.cleanupRuntimeResources()
+        }
     }
 
-    suspend fun synchronousRefresh() {
+    suspend fun refreshMonitoringPanels() {
         val metrics = ollamaJobOrchestrator.captureTmuxPane("${tmuxSessionName}:0.0")
         val gpu = ollamaJobOrchestrator.captureTmuxPane("${tmuxSessionName}:0.1")
 
@@ -146,44 +149,8 @@ class DashboardViewModel(
     }
 
     private fun onAiJobComplete(metrics: PerformanceMetrics) {
-        val processingSpeed = String.format("%.2fs", metrics.promptEvaluationDurationNanos.nanosToSeconds())
-        val generationSpeed = String.format("%.2fs", metrics.generationDurationNanos.nanosToSeconds())
-
-        val processedMetricsLayout = """
-            ================================================================================
-              OLLAMA WORKLOAD DIAGNOSTICS // MODEL: $ollamaModel
-            ================================================================================
-              [ EXECUTIVE VERDICT ]
-              STATUS: SUCCESS (${metrics.doneReason})
-              TOTAL WALL TIME: ${metrics.formattedTotalDuration}
-              
-              [ ENGINE THROUGHPUT ]
-              PHASE 1: Ingestion (Reading Prompt)
-              ├── Tokens Evaluated: ${metrics.promptTokensCount}
-              └── Processing Speed: ${metrics.formattedIngestionSpeed} [Time: $processingSpeed]
-            
-              PHASE 2: Generation (Writing Response)
-              ├── Tokens Streamed:  ${metrics.generatedTokensCount}
-              └── Generation Speed: ${metrics.formattedGenerationSpeed} [Time: $generationSpeed ]
-            
-              [ HARDWARE FORENSICS SUMMARY ]
-              PROCESSOR CPU LOAD: ${metrics.osMetrics.temperature}°C Avg Total Package
-              └── Ollama Active CPU Strain: ${metrics.osMetrics.processCpuConsumption}%
-            ================================================================================
-        """.trimIndent()
-
-        val systemsPanelSummary = """
-            ================================================================================
-            SYSTEM RESOURCE SNAPSHOT
-            ================================================================================
-            GLOBAL TEMPERATURE : ${metrics.osMetrics.temperature}°C
-            TOTAL SYSTEM THREADS: ${metrics.osMetrics.threadCount}
-            ACTIVE CORES DETECTED: ${metrics.osMetrics.cores.size}
-            
-            [ CORE TELEMETRY DETAILED BREAKDOWN ]
-            ${metrics.osMetrics.cores.joinToString("\n") { "├── ${it.name}: ${it.temperature}°C" }}
-            ================================================================================
-        """.trimIndent()
+        val processedMetricsLayout = metricsFormatter.formatDiagnostics(metrics, ollamaModel)
+        val systemsPanelSummary = metricsFormatter.formatSystemSnapshot(metrics)
 
         println(processedMetricsLayout)
         println(systemsPanelSummary)

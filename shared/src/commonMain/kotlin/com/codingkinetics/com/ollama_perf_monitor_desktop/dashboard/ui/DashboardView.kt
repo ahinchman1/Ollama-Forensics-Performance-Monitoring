@@ -29,7 +29,7 @@ fun DashboardView(viewModel: DashboardViewModel) {
 
     LaunchedEffect(uiState is DashboardViewState.ActiveJob) {
         while (isActive && uiState is DashboardViewState.ActiveJob) {
-            viewModel.synchronousRefresh()
+            viewModel.refreshMonitoringPanels()
             delay(1000)
         }
     }
@@ -49,10 +49,7 @@ fun DashboardView(viewModel: DashboardViewModel) {
     }
 
     val currentGpuContent = when (val state = uiState) {
-        is DashboardViewState.CompletedJob -> {
-            println("Completed job data: ${state.completedData}")
-            state.gpuPanel
-        }
+        is DashboardViewState.CompletedJob -> state.gpuPanel
         is DashboardViewState.ActiveJob -> state.gpuPanel
         is DashboardViewState.PipelineFailure -> "Diagnostics:\n${state.installHint}"
         else -> "System Offline - Transitioning to Idle state."
