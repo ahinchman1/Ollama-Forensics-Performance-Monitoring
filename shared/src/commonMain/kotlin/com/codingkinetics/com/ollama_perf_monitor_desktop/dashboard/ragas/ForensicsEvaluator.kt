@@ -11,7 +11,11 @@ import kotlinx.coroutines.Dispatchers
 class ForensicsEvaluator(private val client: HttpClient) {
     private val apiKey = System.getenv("GROQ_API_KEY") ?: ""
 
-    suspend fun evaluateFaithfulness(prompt: String, context: String, response: String): Result<EvaluationResult> = withContext(Dispatchers.IO) {
+    suspend fun evaluateFaithfulness(
+        prompt: String,
+        context: String,
+        response: String,
+    ): Result<EvaluationResult> = withContext(Dispatchers.IO) {
         if (response.isBlank()) {
             return@withContext Result.Failure(Exception("No response to evaluate."))
         }
@@ -34,7 +38,8 @@ class ForensicsEvaluator(private val client: HttpClient) {
             Source Context. Calculate a precision score between 0.0 and 1.0 representing how much of the response 
             is completely faithful to and supported by the context without introducing outside fabrications.
             
-            Return your verdict strictly as a valid raw JSON object matching this schema. Do not output markdown code blocks, do not output prose text.
+            Return your verdict strictly as a valid raw JSON object matching this schema. Do not output markdown 
+            code blocks, do not output prose text.
             {
               "faithfulnessScore": 0.85
             }

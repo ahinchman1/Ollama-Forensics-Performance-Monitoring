@@ -1,14 +1,9 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.formatter
 
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
-import com.codingkinetics.com.ollama_perf_monitor_desktop.util.nanosToSeconds
-import java.util.Locale
 
 class PerformanceMetricsFormatter {
     fun formatDiagnostics(metrics: PerformanceMetrics, model: String): String {
-        val processingSpeed = String.format("%.2fs", metrics.promptEvaluationDurationNanos.nanosToSeconds())
-        val generationSpeed = String.format("%.2fs", metrics.generationDurationNanos.nanosToSeconds())
-
         return """
             ================================================================================
               OLLAMA WORKLOAD DIAGNOSTICS // MODEL: $model
@@ -20,11 +15,11 @@ class PerformanceMetricsFormatter {
               [ ENGINE THROUGHPUT ]
               PHASE 1: Ingestion (Reading Prompt)
               ├── Tokens Evaluated: ${metrics.promptTokensCount}
-              └── Processing Speed: ${metrics.formattedIngestionSpeed} [Time: $processingSpeed]
+              └── Processing Speed: ${metrics.formattedIngestionSpeed}
             
               PHASE 2: Generation (Writing Response)
               ├── Tokens Streamed:  ${metrics.generatedTokensCount}
-              └── Generation Speed: ${metrics.formattedGenerationSpeed} [Time: $generationSpeed ]
+              └── Generation Speed: ${metrics.formattedGenerationSpeed}
             
               [ HARDWARE FORENSICS SUMMARY ]
               PROCESSOR CPU LOAD: ${metrics.osMetrics.temperature}°C Avg Total Package

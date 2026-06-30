@@ -33,5 +33,7 @@ kotlin {
     }
     sourceSets.jvmTest.dependencies {
         implementation(kotlin("test"))
+        implementation(libs.mockk)
+        implementation(libs.ktor.client.mock)
     }
 }

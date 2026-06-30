@@ -18,7 +18,11 @@ class RagasEngine(
 
         println("Analyzing statement alignment across domains...")
 
-        return forensicsEvaluator.evaluateFaithfulness(prompt, contexts.joinToString("\n"), generatedEssay).also { result ->
+        return forensicsEvaluator.evaluateFaithfulness(
+            prompt,
+            contexts.joinToString("\n"),
+            generatedEssay,
+        ).also { result ->
             if (result is Result.Success) {
                 val metrics = result.data
                 println("\n====================================================================")
