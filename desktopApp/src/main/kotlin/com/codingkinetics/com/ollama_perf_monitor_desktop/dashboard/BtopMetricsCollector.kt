@@ -20,6 +20,7 @@ class BtopMetricsCollector: MetricsCollector {
     private val coreRegex = Regex("""C(\d+)\s+\d+%\s+(\d+)°C""")
     private val globalCpuTempRegex = Regex("""CPU\s+.*?\s+(\d+)°C""")
     private val ollamaProcessRegex = Regex("""\d+\s+ollama\s+\S+\s+\S+\s+.*?(\d+\.\d+)\s*""")
+    private val ollamaServiceRegex = Regex("""\d+\s+llama-s\s+\S+\s+\S+\s+.*?(\d+\.\d+)\s*""")
     private val threadRegex = Regex("""(\d+)/(\d+)""")
 
     private var peakTemperature = 0
@@ -107,8 +108,6 @@ class BtopMetricsCollector: MetricsCollector {
     override fun parseBtopData(): Result<OSMetrics> {
         val rawText = captureMetricsInWindowPane()
 
-        println("DEBUG: Raw Text received from Tmux: '$rawText'")
-
         if (rawText.startsWith("Pane error")) {
             println("CRITICAL: Tmux pane capture failed at the OS level!")
         }
@@ -128,11 +127,10 @@ class BtopMetricsCollector: MetricsCollector {
         try {
             val cpuGraph = extractCpuGraph(rawText)
             val cleanText = rawText.sanitizeUIBorders()
-            println("DEBUG: Clean Text received from Btop: '$cleanText'")
             val lines = cleanText.lines()
 
             val cpuStats = parseGlobalCPUTempAndLoad(lines)
-            val telemetry = scrapeBtopTelemetry(lines)
+            val telemetry = scrapeBtopTelemetry(cpuStats, lines)
             val coreTemps = getCoreTemperatures(cpuStats)
             val threadCount = captureOllamaThreadCount()
 
@@ -147,8 +145,6 @@ class BtopMetricsCollector: MetricsCollector {
                 threadCount = threadCount,
             )
 
-
-            println("Parsed metrics: $metrics")
             return Result.Success(metrics)
         } catch (e: Exception) {
             println("Unable to get BtopMetrics. Cause of error: $e")
@@ -174,7 +170,9 @@ class BtopMetricsCollector: MetricsCollector {
         telemetry: String,
         cpuGraph: List<String>,
     ) {
-        if (cpuStats.processCpu >= peakProcessCpuConsumption || coreTemps >= peakTemperature) {
+        val shouldUpdate = peakProcessCpuConsumption == 0L || peakTemperature == 0 ||
+            cpuStats.processCpu >= peakProcessCpuConsumption || coreTemps >= peakTemperature
+        if (shouldUpdate) {
             peakProcessCpuConsumption = maxOf(peakProcessCpuConsumption, cpuStats.processCpu)
             peakTemperature = maxOf(peakTemperature, coreTemps)
             peakThreadCount = maxOf(peakThreadCount, threadCount)
@@ -251,9 +249,14 @@ class BtopMetricsCollector: MetricsCollector {
                     coresList.add(Core(name = "Core $coreNumber", temperature = coreTemp))
                 }
 
-                if (line.contains("ollama")) {
+                if (line.contains("ollama", ignoreCase = true) || line.contains("llama-s", ignoreCase = true)) {
                     ollamaProcessRegex.find(line)?.let { match ->
                         processCpu = match.groupValues[1].toDoubleOrNull()?.toLong() ?: 0L
+                    }
+                    if (processCpu == 0L) {
+                        ollamaServiceRegex.find(line)?.let { match ->
+                            processCpu = match.groupValues[1].toDoubleOrNull()?.toLong() ?: 0L
+                        }
                     }
                 }
             }
@@ -263,12 +266,19 @@ class BtopMetricsCollector: MetricsCollector {
         return CpuSnapshotData(globalTemperature, processCpu, coresList)
     }
 
-    private fun scrapeBtopTelemetry(lines: List<String>): String {
-        val cpuPercentage = lines.firstOrNull { it.matches(Regex("\\d+\\.\\d+")) }?.toDouble() ?: 0.0
-        val pid = lines.firstOrNull { it.matches(Regex("\\d+")) && it.length >= 3 }?.toLong() ?: 0L
+    private fun scrapeBtopTelemetry(cpuStats: CpuSnapshotData, lines: List<String>): String {
+        val ollamaLine = lines.firstOrNull { 
+            (it.contains("ollama") || it.contains("llama-s")) && it.contains(Regex("\\d+\\.\\d+")) 
+        }
+        val pid = ollamaLine?.let { line ->
+            Regex("""(\d+)\s+(?:ollama|llama-s)""").find(line)?.groupValues?.get(1)?.toLongOrNull()
+        } ?: 0L
 
-        val ramAllocation = lines.firstOrNull { it.contains(Regex("\\d+\\.\\d+[G|M]")) } ?: "0.0G"
-        return "PID: $pid | CPU: $cpuPercentage% | RAM Used: $ramAllocation"
+        val ramAllocation = ollamaLine?.let { line ->
+            Regex("""(\d+\.\d+[G|M])""").find(line)?.groupValues?.get(1)
+        } ?: "0.0G"
+
+        return "PID: $pid | CPU: ${cpuStats.processCpu.toDouble()}% | RAM Used: $ramAllocation"
     }
 
     private fun captureOllamaThreadCount(): Int {

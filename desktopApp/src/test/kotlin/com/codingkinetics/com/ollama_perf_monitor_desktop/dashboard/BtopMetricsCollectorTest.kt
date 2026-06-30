@@ -9,18 +9,18 @@ class BtopMetricsCollectorTest {
 
     private val collector = BtopMetricsCollector()
 
-    @Test
+@Test
     fun testSuccessfulBtopParsing() {
         // GIVEN
         val sampleBtopOutput = """
         ╭─┐¹cpu┌──┐menu┌┐preset *┌──────────┐14:55:12┌────┐BAT▼ 93% 05:54┌┐- 2000ms +┌─╮
         │                          ⢀  ⢀      ╭─┐i9-9980HK┌────────────────────────┐2.4┌╮│
         │⣶⣴⣤⣧⣦⣴⣤⣦⣦⣴⣾⣶⣶⣶⣶⣶⣾⣾⣶⣴⣴⣷⣶⣶⣶⣶⣿⣿⣶⣿⣿⣷⣶⣶⣷│CPU ■■■■■■■■■■■■■■■■■■■■  54% ⣶⣶⣶⣶⣶  78°C││
-        │⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│C0  96%  81°C│C2  97%  82°C│C4  97%  82°C││
-        │⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│C1   8%  81°C│C3   9%  82°C│C5   9%  82°C││
+        │⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│C0  96%  81°C│C2  97%  82°C│C4  97%  82°C││
+        │⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│C1   8%  81°C│C3   9%  82°C│C5   9%  82°C││
         │⠿⠻⠛⡟⠟⠻⠛⠟⠟⠻⢿⠿⠿⠿⠿⠿⢿⢿⠿⠻⠻⡿⠿⠿⠿⠿⣿⣿⠿⣿⣿⡿⠿⠿⡿│                Load avg: 10.08 6.96 5.47││
         ├─────────────────├─Preboot───465G─┤│    Pid: Program  User:  MemB        Cpu% ↑│
-        │                 │ IO ⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀  ││   39408 ollama  aman+  2.4G ⣤⣤⣤⣤⣤ 49.4  █│
+        │                 │ IO ⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀  ││   27236 llama-s aman+  2.5G ⣤⣤⣤⣤⣤ 47.5  █│
         ╰─────────────────┴────────────────╯│    3292 Google  aman+  119M ⢀⣀⣀⣀⣀  0.0  ↓│
         ╰┘↑ select ↓└┘info ↵└┘signals└┘N────┘0/758└╯
         """.trimIndent()
@@ -33,7 +33,7 @@ class BtopMetricsCollectorTest {
         val metrics = result.data
 
         assertEquals(78, metrics.temperature, "Global temperature extraction failed")
-        assertEquals(49L, metrics.processCpuConsumption, "Ollama standalone CPU consumption parsing failed")
+        assertEquals(47L, metrics.processCpuConsumption, "Ollama standalone CPU consumption parsing failed")
         assertEquals(0, metrics.threadCount, "Thread count should gracefully default to 0 when process isn't natively active on host platform")
         assertEquals(6, metrics.cores.size, "Failed to capture all 6 distinct cores present in text rows")
 

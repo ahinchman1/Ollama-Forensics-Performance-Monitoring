@@ -11,7 +11,6 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.util.ollamaExecutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxExecutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +25,6 @@ class DashboardViewModel(
 ) {
     private val _viewState = MutableStateFlow<DashboardViewState>(DashboardViewState.Idle)
     val viewState: StateFlow<DashboardViewState> = _viewState.asStateFlow()
-    private var observabilityJob: Job? = null
     private val ollamaModel = "llama3.2"
 
     fun startPipeline(onEssayChunkReceived: (String) -> Unit) {
@@ -46,7 +44,6 @@ class DashboardViewModel(
                         updateToActiveJob()
                     }
                     synchronousRefresh()
-                    startObservabilityStream()
 
                     getPerformanceData(onEssayChunkReceived)
 
@@ -147,25 +144,7 @@ class DashboardViewModel(
         }
     }
 
-    fun startObservabilityStream() {
-        observabilityJob?.cancel()
-
-        observabilityJob = scope.launch(contextPool.mainImmediateDispatcher) {
-            _viewState.update { currentState ->
-                if (currentState is DashboardViewState.ActiveJob) {
-                    currentState.copy(
-                        statusMessage = "Running Ollama model '$ollamaModel'...",
-                        essayText = "Waiting for Ollama pre-fill..."
-                    )
-                } else currentState
-            }
-        }
-    }
-
     private fun cleanupRuntimeResources() {
-        observabilityJob?.cancel()
-        observabilityJob = null
-
         ollamaJobOrchestrator.cleanupRuntimeResources()
     }
 

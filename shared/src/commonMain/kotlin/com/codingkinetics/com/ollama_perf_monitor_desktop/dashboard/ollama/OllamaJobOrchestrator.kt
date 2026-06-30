@@ -12,12 +12,19 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.util.flatMap
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.runCommandIgnoringErrors
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxExecutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 class OllamaJobOrchestrator(
     val jobRunner: OllamaJobRunner,
     val metricsCollector: MetricsCollector,
     val ragasEngine: RagasEngine,
 ) {
+    private var metricsSamplingJob: Job? = null
 
     internal fun checkMonitoringToolDependency(): Result<Unit> {
         return when {
@@ -38,14 +45,20 @@ class OllamaJobOrchestrator(
         prompt: String,
         onChunk: (String) -> Unit,
         getCurrentEssayText: () -> String,
-    ): Result<PerformanceMetrics> = when (val ollamaData = jobRunner.runOllamaEssayJob(model, prompt, onChunk)) {
-        is Result.Success -> {
-            logCompletedStats(ollamaData.data)
-            val retrieveCurrentEssayText = getCurrentEssayText()
-            evaluateRagasScore(prompt, retrieveCurrentEssayText, ollamaData.data)
-        }
-        is Result.Failure -> {
-            ollamaData
+    ): Result<PerformanceMetrics> {
+        metricsCollector.resetPeakMetrics()
+        startMetricsSampling()
+        return when (val ollamaData = jobRunner.runOllamaEssayJob(model, prompt, onChunk)) {
+            is Result.Success -> {
+                stopMetricsSampling()
+                logCompletedStats(ollamaData.data)
+                val retrieveCurrentEssayText = getCurrentEssayText()
+                evaluateRagasScore(prompt, retrieveCurrentEssayText, ollamaData.data)
+            }
+            is Result.Failure -> {
+                stopMetricsSampling()
+                ollamaData
+            }
         }
     }
 
@@ -89,6 +102,22 @@ class OllamaJobOrchestrator(
     internal fun startDashboard() {
         runCommandIgnoringErrors(tmuxExecutable, "kill-session", "-t", tmuxSessionName)
         metricsCollector.startMetricsDashboard()
+    }
+
+    internal fun startMetricsSampling() {
+        metricsSamplingJob?.cancel()
+        metricsSamplingJob = CoroutineScope(Dispatchers.IO).launch {
+            delay(100)
+            while (isActive) {
+                metricsCollector.parseBtopData()
+                delay(100)
+            }
+        }
+    }
+
+    internal fun stopMetricsSampling() {
+        metricsSamplingJob?.cancel()
+        metricsSamplingJob = null
     }
 
     // TODO create a model object that captures graph state live as well
