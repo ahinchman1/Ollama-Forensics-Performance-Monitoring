@@ -175,8 +175,8 @@ class DashboardViewModel(
                 signature verification safely in the background, and drop things if it gets too overloaded 
                 so it doesn't crash the JVM
                     
-                Prompt
-                    Write the complete production implementation. Make sure it explicitly uses a single-threaded event loop for the state changes and applies strict backpressure.
-                    """.trimIndent()
+            Prompt
+                Write the complete production implementation. Make sure it explicitly uses a single-threaded 
+                event loop for the state changes and applies strict backpressure.""".trimIndent()
     }
 }

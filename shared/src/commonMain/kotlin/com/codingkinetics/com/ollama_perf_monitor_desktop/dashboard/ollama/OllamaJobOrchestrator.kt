@@ -4,6 +4,7 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.mapper.mapOl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.EvaluationResult
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.RagasEngine
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.MetricsCollector
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OSMetrics
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaJobResult
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
@@ -51,13 +52,14 @@ class OllamaJobOrchestrator(
         prompt: String,
         onChunk: (String) -> Unit,
     ): Result<PerformanceMetrics> {
-        metricsCollector.resetPeakMetrics()
         startMetricsSampling()
         return when (val ollamaData = jobRunner.runOllamaEssayJob(model, prompt, onChunk, coroutineContextProvider)) {
             is Result.Success -> {
+                val peakMetrics = metricsCollector.getPeakMetricsCollected()
                 stopMetricsSampling()
                 logCompletedStats(ollamaData.data)
-                evaluateRagasScore(prompt, ollamaData.data)
+                metricsCollector.resetPeakMetrics()
+                evaluateRagasScore(prompt, ollamaData.data, peakMetrics)
             }
             is Result.Failure -> {
                 stopMetricsSampling()
@@ -69,8 +71,13 @@ class OllamaJobOrchestrator(
     private suspend fun evaluateRagasScore(
         prompt: String,
         jobResult: OllamaJobResult,
+        peakMetrics: OSMetrics,
     ): Result<PerformanceMetrics> =
-        ragasEngine.calculateHallucinationScore(prompt, jobResult.generatedText).flatMap { evalData ->
+        ragasEngine.calculateHallucinationScore(
+            prompt,
+            jobResult.generatedText,
+            peakMetrics,
+        ).flatMap { evalData ->
             getPerformanceData(prompt, jobResult, evalData)
         }
 

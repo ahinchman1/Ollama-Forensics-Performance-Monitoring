@@ -7,10 +7,16 @@ data class GroqMessage(val role: String, val content: String)
 
 @Serializable
 data class GroqRequest(
-    val model: String = "llama-3.3-70b-versatile",
+    val model: String,
     val messages: List<GroqMessage>,
-    val temperature: Double = 0.0
+    val temperature: Double
 )
+
+@Serializable
+data class GroqError(val error: GroqErrorDetail)
+
+@Serializable
+data class GroqErrorDetail(val message: String)
 
 @Serializable
 data class EvaluationResult(

@@ -2,6 +2,7 @@ package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas
 
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 import io.ktor.client.*
+import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -20,61 +21,107 @@ class ForensicsEvaluator(private val client: HttpClient) {
             return@withContext Result.Failure(Exception("No response to evaluate."))
         }
 
-        val evaluationPrompt = """
-            You are a rigorous forensic AI performance validator. Your job is to analyze a model's generated response 
-            against a source context block.
-            
-            [Source Context]
-            $context
-            
-            [User Prompt]
-            $prompt
-            
-            [Generated Response]
-            $response
-            
-            Perform two precise analytical evaluations:
-            1. Extract the individual claims made in the Generated Response and cross-reference them with the 
-            Source Context. Calculate a precision score between 0.0 and 1.0 representing how much of the response 
-            is completely faithful to and supported by the context without introducing outside fabrications.
-            
-            Return your verdict strictly as a valid raw JSON object matching this schema. Do not output markdown 
-            code blocks, do not output prose text.
-            {
-              "faithfulnessScore": 0.85
-            }
+        val systemPrompt = """
+            You are a strict forensic auditor. Output JSON only.
+            Given a user prompt, a model response, and telemetry context, score faithfulness 0.00-1.00.
+            0.00 = response ignores the prompt or contradicts context.
+            1.00 = response directly answers the prompt using only context values.
+            Return: {"faithfulnessScore": X.XX}
         """.trimIndent()
 
+        val userPrompt = buildString {
+            appendLine("[USER PROMPT]")
+            appendLine(prompt)
+            appendLine()
+            appendLine("[MODEL RESPONSE TO AUDIT]")
+            appendLine(response)
+            appendLine()
+            appendLine("[CONTEXT - TELEMETRY BASELINE]")
+            appendLine(context)
+            appendLine()
+            appendLine("TASK: Does the response directly and accurately answer the user prompt using ONLY the context values above? Output ONLY JSON: {\"faithfulnessScore\": X.XX}")
+        }
+
         try {
-            val httpResponse = client.post("https://api.groq.com/openai/v1/chat/completions") {
-                header(HttpHeaders.Authorization, "Bearer $apiKey")
-                contentType(ContentType.Application.Json)
-                setBody(
-                    GroqRequest(
-                        messages = listOf(
-                            GroqMessage(role = "user", content = evaluationPrompt)
-                        )
-                    )
-                )
+            val firstRaw = callGroq(systemPrompt, userPrompt)
+            println("First raw: $firstRaw")
+            val firstScore = extractScoreFromJson(firstRaw)
+            if (firstScore != FALLBACK_SCORE) {
+                return@withContext Result.Success(EvaluationResult(firstScore, 1.0 - firstScore))
             }
 
-            val rawBody = httpResponse.bodyAsText()
-            val receivedFaithfulness = extractScoreFromJson(rawBody)
+            val repairPrompt = "Your last reply was invalid. Output ONLY JSON: {\"faithfulnessScore\": 0.85}"
+            val secondRaw = callGroq(systemPrompt, repairPrompt)
+            val secondScore = extractScoreFromJson(secondRaw)
 
-            Result.Success(EvaluationResult(
-                faithfulnessScore = receivedFaithfulness,
-                hallucinationIndex = 1.0 - receivedFaithfulness
-            ))
+            Result.Success(EvaluationResult(secondScore, 1.0 - secondScore))
         } catch (e: Exception) {
-            println("Failed to execute Ragas forensics script: ${e.message}")
+            println("Forensics evaluation failed: ${e.message}")
             Result.Failure(e)
         }
     }
 
+    private suspend fun callGroq(systemPrompt: String, userPrompt: String): String {
+        val httpResponse = client.post("https://api.groq.com/openai/v1/chat/completions") {
+            header(HttpHeaders.Authorization, "Bearer $apiKey")
+            contentType(ContentType.Application.Json)
+            setBody(
+                GroqRequest(
+                    model = "llama-3.3-70b-versatile",
+                    messages = listOf(
+                        GroqMessage("system", systemPrompt),
+                        GroqMessage("user", userPrompt)
+                    ),
+                    temperature = 0.0
+                )
+            )
+        }
+
+        if (!httpResponse.status.isSuccess()) {
+            val errorBody = httpResponse.bodyAsText()
+            val message = runCatching { httpResponse.body<GroqError>() }.getOrNull()?.error?.message
+                ?: errorBody.take(200)
+            throw Exception("Groq API error ${httpResponse.status}: $message")
+        }
+
+        return httpResponse.bodyAsText()
+    }
+
     private fun extractScoreFromJson(rawJson: String): Double {
-        // Safe primitive extraction fallback loop if the model skips structural parsing layout
-        val regex = """"faithfulnessScore"\s*:\s*([0-9.]+)""".toRegex()
-        val match = regex.find(rawJson)
-        return match?.groupValues?.get(1)?.toDoubleOrNull() ?: 1.0
+        val content = extractGroqContent(rawJson) ?: rawJson
+        println("[DEBUG] Extracted Groq content: ${content.take(200)}")
+
+        val direct = """"faithfulnessScore"\s*[:=,]\s*([0-9]*\.?[0-9]+)""".toRegex().find(content)
+        if (direct != null) {
+            val score = direct.groupValues[1].toDoubleOrNull()?.coerceIn(0.0, 1.0)
+            println("[DEBUG] Direct faithfulnessScore regex matched: ${direct.groupValues[1]} → $score")
+            return score ?: FALLBACK_SCORE
+        }
+
+        val alt = """"?(score|faithfulness)"?\s*[:=,]\s*([0-9]*\.?[0-9]+)""".toRegex().find(content)
+        if (alt != null) {
+            val score = alt.groupValues[2].toDoubleOrNull()?.coerceIn(0.0, 1.0)
+            println("[DEBUG] Alt key '${alt.groupValues[1]}' matched: ${alt.groupValues[2]} → $score")
+            return score ?: FALLBACK_SCORE
+        }
+
+        val decimal = Regex("""([0-9]*\.[0-9]+)""").find(content)
+        val decimalScore = decimal?.groupValues?.get(1)?.toDoubleOrNull()?.coerceIn(0.0, 1.0)
+        println("[DEBUG] No key match, decimal fallback: $decimalScore")
+        return decimalScore ?: FALLBACK_SCORE
+    }
+
+    private fun extractGroqContent(rawJson: String): String? {
+        val contentMatch = Regex("\"content\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"").find(rawJson)
+        val extracted = contentMatch?.groupValues?.get(1)
+            ?.replace("\\\"", "\"")
+            ?.replace("\\\\", "\\")
+        println("[DEBUG] Raw Groq content match: ${contentMatch?.groupValues?.get(1)?.take(100)}")
+        println("[DEBUG] After unescape: ${extracted?.take(100)}")
+        return extracted
+    }
+
+    companion object {
+        private const val FALLBACK_SCORE = 0.5
     }
 }

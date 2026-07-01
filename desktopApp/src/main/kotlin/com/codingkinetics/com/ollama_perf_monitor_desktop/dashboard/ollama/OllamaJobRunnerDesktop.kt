@@ -17,6 +17,9 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URL
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Serializable
 private data class OllamaGenerateRequest(
@@ -138,6 +141,11 @@ class OllamaJobRunnerDesktop(
                     finalResultData = OllamaJobResult(generatedText = output, completedData = completedData)
                 }
 
+                finalResultData?.let { result ->
+                    println("Generated Text:\n${result.generatedText}")
+                    writeOutputToTmp(result.generatedText)
+                }
+
                 finalResultData
             }?.let {
                 Result.Success(it)
@@ -186,5 +194,12 @@ class OllamaJobRunnerDesktop(
     override fun cleanupRuntimeResources() {
         serverProcess?.destroyForcibly()
         serverProcess = null
+    }
+
+    private fun writeOutputToTmp(text: String) {
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        val outputFile = File(System.getProperty("java.io.tmpdir"), "ollama_output_$timestamp.txt")
+        outputFile.writeText(text)
+        println("Output written to: ${outputFile.absolutePath}")
     }
 }

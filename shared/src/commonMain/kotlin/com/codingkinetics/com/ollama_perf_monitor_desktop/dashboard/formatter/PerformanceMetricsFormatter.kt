@@ -22,7 +22,7 @@ class PerformanceMetricsFormatter {
               └── Generation Speed: ${metrics.formattedGenerationSpeed}
             
               [ HARDWARE FORENSICS SUMMARY ]
-              PROCESSOR CPU LOAD: ${metrics.osMetrics.temperature}°C Avg Total Package
+              PROCESSOR CPU LOAD: ${metrics.osMetrics.temperature}°F Avg Total Package
               └── Ollama Active CPU Strain: ${metrics.osMetrics.processCpuConsumption}%
             ================================================================================
         """.trimIndent()
