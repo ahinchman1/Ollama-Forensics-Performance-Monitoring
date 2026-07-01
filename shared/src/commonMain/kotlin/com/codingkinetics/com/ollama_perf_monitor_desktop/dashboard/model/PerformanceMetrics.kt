@@ -1,0 +1,86 @@
+package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model
+
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.nanosToSeconds
+import java.util.Locale
+
+data class PerformanceMetrics(
+    val prompt: String,
+    val output: String,
+    val osMetrics: OSMetrics,
+    val loadDurationNanos: Long,              // Keep raw for precise calculations/sorting
+    val totalDurationNanos: Long,             // Keep raw for precise calculations/sorting
+    val done: Boolean,
+    val doneReason: String,
+    val promptTokensCount: Long,
+    val promptEvaluationDurationNanos: Long,
+    val generatedTokensCount: Long,           // Translates from 'tabCount'
+    val generationDurationNanos: Long,        // Translates from 'tabDuration'
+    val hallucinationIndex: Double = 0.0,     // Ragas evaluation
+    val faithfulnessScore: Double = 0.0,
+) {
+
+    /** Velocity of token generation (tokens/sec) */
+    val tokensPerSecond: Double
+        get() = if (generationDurationNanos > 0) {
+            generatedTokensCount.toDouble() / generationDurationNanos.nanosToSeconds()
+        } else 0.0
+
+    /** Velocity of prompt ingestion (tokens/sec) */
+    val promptIngestionSpeed: Double
+        get() = if (promptEvaluationDurationNanos > 0) {
+            promptTokensCount.toDouble() / promptEvaluationDurationNanos.nanosToSeconds()
+        } else 0.0
+
+    val formattedGenerationSpeed: String
+        get() = String.format(Locale.US, "%.2f t/s", tokensPerSecond)
+
+    val formattedIngestionSpeed: String
+        get() = String.format(Locale.US, "%.2f t/s", promptIngestionSpeed)
+
+    val formattedLoadDuration: String
+        get() = String.format(Locale.US, "%.2fs", loadDurationNanos.nanosToSeconds())
+
+    val formattedTotalDuration: String
+        get() = String.format(Locale.US, "%.2fs", totalDurationNanos.nanosToSeconds())
+
+    val formattedPromptEvaluation: String
+        get() = String.format(Locale.US, "%.2fs", promptEvaluationDurationNanos.nanosToSeconds())
+
+    val formattedGenerationDuration: String
+        get() = String.format(Locale.US, "%.2fs", generationDurationNanos.nanosToSeconds())
+
+    override fun toString(): String {
+        return """
+            ====================================================================
+            OLLAMA INFERENCE PERFORMANCE FORENSICS
+            ====================================================================
+            Pipeline Status       : Done (Reason: $doneReason)
+            Total Execution Time  : $formattedTotalDuration
+            
+            CORE VELOCITY ENGINE METRICS:
+            --------------------------------------------------------------------
+            Prompt Ingestion Speed: $formattedIngestionSpeed
+            Token Generation Speed: $formattedGenerationSpeed
+            
+            TOKEN COUNTS:
+            --------------------------------------------------------------------
+            Prompt Tokens In     : $promptTokensCount tokens
+            Output Tokens Out     : $generatedTokensCount tokens
+            Total Processed Vol   : ${promptTokensCount + generatedTokensCount} tokens
+            
+            SUBSYSTEM LATENCY BREAKDOWN:
+            --------------------------------------------------------------------
+            Model Weights Load    : $formattedLoadDuration
+            Prompt Evaluation     : $formattedPromptEvaluation
+            Generation Duration   : $formattedGenerationDuration
+            
+            DIAGNOSTICS & RESEARCH METRICS:
+            --------------------------------------------------------------------
+            Hallucination Index   : $hallucinationIndex
+            Underlying OS Metrics : $osMetrics
+            ====================================================================
+        """.trimIndent()
+    }
+}
+
+private fun Double.ifZero(ifZero: () -> String) = if (this == 0.0) ifZero() else toString()

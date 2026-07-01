@@ -1,0 +1,66 @@
+source: https://kotlinlang.org/docs/coroutines-overview.html
+date accessed: 2026-06-20
+
+Coroutines﻿
+Edit pageLast modified: 16 June 2026
+Applications often need to perform multiple tasks at the same time, such as responding to user input, loading data, or updating the screen. To support this, they rely on concurrency, which allows operations to run independently without blocking each other.
+
+The most common way to run tasks concurrently is by using threads, which are independent paths of execution managed by the operating system. However, threads are relatively heavy, and creating many of them can lead to performance issues.
+
+To support efficient concurrency, Kotlin uses asynchronous programming built around coroutines, which let you write asynchronous code in a natural, sequential style using suspending functions. Coroutines are lightweight alternatives to threads. They can suspend without blocking system resources and are resource-friendly, making them better suited for fine-grained concurrency.
+
+Most coroutine features are provided by the kotlinx.coroutines library, which includes tools for launching coroutines, handling concurrency, working with asynchronous streams, and more.
+
+If you're new to coroutines in Kotlin, start with the Coroutine basics guide before diving into more complex topics. This guide introduces the key concepts of suspending functions, coroutine builders, and structured concurrency through simple examples:
+
+Get started with coroutines
+Check out the KotlinConf app for a sample project to see how coroutines are used in practice.
+
+Coroutine concepts﻿
+The kotlinx.coroutines library provides the core building blocks for running tasks concurrently, structuring coroutine execution, and managing shared state.
+
+Suspending functions and coroutine builders﻿
+Coroutines in Kotlin are built on suspending functions, which allow code to pause and resume without blocking a thread. The suspend keyword marks functions that can perform long-running operations asynchronously.
+
+To launch new coroutines, use coroutine builders like .launch() and .async(). These builders are extension functions on CoroutineScope, which defines the coroutine's lifecycle and provides the coroutine context.
+
+You can learn more about these builders in Coroutine basics and Composing suspend functions.
+
+Coroutine context and behavior﻿
+Launching a coroutine from a CoroutineScope creates a context that governs its execution. Builder functions like .launch() and .async() automatically create a set of elements that define how the coroutine behaves:
+
+The Job interface tracks the coroutine's lifecycle and enables structured concurrency.
+
+CoroutineDispatcher controls where the coroutine runs, such as on a background thread or the main thread in UI applications.
+
+CoroutineExceptionHandler handles uncaught exceptions.
+
+These, along with other possible elements, make up the coroutine context, which is inherited by default from the coroutine's parent. This context forms a hierarchy that enables structured concurrency, where related coroutines can be canceled together or handle exceptions as a group.
+
+Asynchronous flow and shared mutable state﻿
+Kotlin provides several ways for coroutines to communicate. Use one of the following options based on how you want to share values between coroutines:
+
+Flow produces values only when a coroutine actively collects them.
+
+Channel allows multiple coroutines to send and receive values, with each value delivered to exactly one coroutine.
+
+SharedFlow continuously shares every value with all active collecting coroutines.
+
+When multiple coroutines need to access or update the same data, they share mutable state. Without coordination, this can lead to race conditions, where operations interfere with each other in unpredictable ways. To safely manage shared mutable state, use StateFlow to wrap the shared data. Then, you can update it from one coroutine and collect its latest value from others.
+
+For more information, see Flows, Channels, and the Coroutines and channels tutorial.
+
+What's next﻿
+Learn the fundamentals of coroutines, suspending functions, and builders in the Coroutine basics guide.
+
+Explore how to combine suspending functions and build coroutine pipelines in Composing suspending functions.
+
+Learn how to debug coroutines using built-in tools in IntelliJ IDEA.
+
+For flow-specific debugging, see the Debug Kotlin Flow using IntelliJ IDEA tutorial.
+
+Read the Guide to UI programming with coroutines to learn about coroutine-based UI development.
+
+Review best practices for using coroutines in Android.
+
+Check out the kotlinx.coroutines API reference.

@@ -18,8 +18,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.domain.models.DashboardViewState
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.domain.DashboardViewModel
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.model.DashboardViewState
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.model.DashboardViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
@@ -29,7 +29,7 @@ fun DashboardView(viewModel: DashboardViewModel) {
 
     LaunchedEffect(uiState is DashboardViewState.ActiveJob) {
         while (isActive && uiState is DashboardViewState.ActiveJob) {
-            viewModel.synchronousRefresh()
+            viewModel.refreshMonitoringPanels()
             delay(1000)
         }
     }
@@ -37,24 +37,21 @@ fun DashboardView(viewModel: DashboardViewModel) {
     val currentStatusMessage = when (val state = uiState) {
         is DashboardViewState.Idle -> "System Ready. Infrastructure offline."
         is DashboardViewState.ActiveJob -> state.statusMessage
-        is DashboardViewState.Error -> "FAILURE: ${state.errorMessage}"
+        is DashboardViewState.PipelineFailure -> "FAILURE: ${state.errorMessage}"
         is DashboardViewState.CompletedJob -> state.statusMessage
     }
 
     val currentMetricsContent = when (val state = uiState) {
         is DashboardViewState.ActiveJob -> state.metricsPanel
         is DashboardViewState.CompletedJob -> state.metricsPanel
-        is DashboardViewState.Error -> "Environment Failure:\ntmux target broken or crashed."
+        is DashboardViewState.PipelineFailure -> "Environment Failure:\n${state.installHint}"
         else -> "System Offline - Transitioning to Idle state."
     }
 
     val currentGpuContent = when (val state = uiState) {
-        is DashboardViewState.CompletedJob -> {
-            println("Completed job data: ${state.completedData}")
-            state.completedData.toString()
-        }
+        is DashboardViewState.CompletedJob -> state.gpuPanel
         is DashboardViewState.ActiveJob -> state.gpuPanel
-        is DashboardViewState.Error -> "Diagnostics:\ntmux: ${state.tmuxPath}\nollama: ${state.ollamaPath}"
+        is DashboardViewState.PipelineFailure -> "Diagnostics:\n${state.installHint}"
         else -> "System Offline - Transitioning to Idle state."
     }
 

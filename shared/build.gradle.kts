@@ -2,15 +2,15 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    kotlin("plugin.serialization") version "2.2.0"
+    alias(libs.plugins.kotlinx.serialization)
 }
 
 kotlin {
     jvm()
 
-
     sourceSets {
         commonMain.dependencies {
+            implementation(project.dependencies.platform("org.jetbrains.kotlin:kotlin-bom:${libs.versions.kotlin.get()}"))
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
@@ -18,13 +18,22 @@ kotlin {
             implementation(libs.compose.components.resources)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.ktor.core)
+            implementation(libs.ktor.cio)
+            implementation(libs.ktor.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
 
             implementation(fileTree("libs") { include("*.jar") })
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
+    }
+    sourceSets.jvmTest.dependencies {
+        implementation(kotlin("test"))
+        implementation(libs.mockk)
+        implementation(libs.ktor.client.mock)
     }
 }
