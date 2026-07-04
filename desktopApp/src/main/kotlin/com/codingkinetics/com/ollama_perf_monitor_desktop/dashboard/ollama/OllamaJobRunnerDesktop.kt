@@ -42,7 +42,7 @@ class OllamaJobRunnerDesktop(
     private val ollamaStreamingEndpointUrl = URL("$ollamaBaseUrl/api/generate")
 
     override fun startOllamaServer() = try {
-        runCommandIgnoringErrors("pkill", "-f", "ollama serve")
+        killOllamaRuntimeProcesses()
         val userHome = System.getProperty("user.home")
         val logFile = File(userHome, "ollama_server.log")
 
@@ -104,7 +104,6 @@ class OllamaJobRunnerDesktop(
         model: String,
         prompt: String,
         onChunk: (String) -> Unit,
-        coroutineContextProvider: CoroutineContextProvider,
     ): Result<OllamaJobResult> {
         var connection: HttpURLConnection? = null
         return try {
@@ -194,6 +193,13 @@ class OllamaJobRunnerDesktop(
     override fun cleanupRuntimeResources() {
         serverProcess?.destroyForcibly()
         serverProcess = null
+        killOllamaRuntimeProcesses()
+    }
+
+    private fun killOllamaRuntimeProcesses() {
+        runCommandIgnoringErrors("pkill", "-f", "llama-server")
+        runCommandIgnoringErrors("pkill", "-f", "ollama serve")
+        runCommandIgnoringErrors("pkill", "-f", "ollama")
     }
 
     private fun writeOutputToTmp(text: String) {

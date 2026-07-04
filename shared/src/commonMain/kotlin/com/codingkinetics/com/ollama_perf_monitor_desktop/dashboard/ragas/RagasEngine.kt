@@ -79,7 +79,8 @@ class RagasEngine(
 
     private fun buildTelemetryBlock(peakMetrics: OSMetrics): String = buildString {
         appendLine("Actual Physical Telemetry Measured For This Run:")
-        appendLine("- Peak CPU Saturation: ${peakMetrics.processCpuConsumption}%")
+        appendLine("- Peak CPU Saturation (ps / absolute): ${peakMetrics.processCpuConsumption}%")
+        appendLine("- Peak CPU Load (btop / normalized)   : ${peakMetrics.btopProcessCpuConsumption}%")
         appendLine("- Peak Temperature: ${peakMetrics.temperature}°C")
         appendLine("- Live System Threads: ${peakMetrics.threadCount}")
     }

@@ -6,6 +6,7 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextP
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
+import com.codingkinetics.com.ollama_perf_monitor_desktop.benchmarking.ForensicsBenchmarkSuite
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +25,29 @@ class DashboardViewModel(
     private val _viewState = MutableStateFlow<DashboardViewState>(DashboardViewState.Idle)
     val viewState: StateFlow<DashboardViewState> = _viewState.asStateFlow()
     private val ollamaModel = "llama3.2"
+
+    companion object {
+        const val MaxBenchmarkLogChars = 20_000
+
+        val prompt = """
+            Project Architecture Constraints:
+                We are building a highly concurrent Kotlin transaction engine. It needs to be fast, handle 
+                signature verification safely in the background, and drop things if it gets too overloaded 
+                so it doesn't crash the JVM
+                    
+            Prompt
+                Write the complete production implementation. Make sure it explicitly uses a single-threaded 
+                event loop for the state changes and applies strict backpressure.""".trimIndent()
+    }
+
+    private fun appendBoundedLog(existing: String, addition: String): String {
+        val combined = existing + addition
+        return if (combined.length <= MaxBenchmarkLogChars) {
+            combined
+        } else {
+            combined.takeLast(MaxBenchmarkLogChars)
+        }
+    }
 
     fun startPipeline(onEssayChunkReceived: (String) -> Unit) {
         _viewState.value = DashboardViewState.ActiveJob(
@@ -103,12 +127,9 @@ class DashboardViewModel(
         { chunk ->
             _viewState.update { currentState ->
                 if (currentState is DashboardViewState.ActiveJob) {
-                    val cleanText = if (currentState.essayText == "Waiting for Ollama pre-fill...") {
-                        ""
-                    } else {
-                        currentState.essayText
-                    }
-                    currentState.copy(essayText = cleanText + chunk)
+                    currentState.copy(
+                        essayText = appendBoundedLog(currentState.essayText, chunk),
+                    )
                 } else currentState
             }
 
@@ -120,6 +141,57 @@ class DashboardViewModel(
             cleanupRuntimeResources()
             withContext(contextPool.mainDispatcher) {
                 _viewState.value = DashboardViewState.Idle
+            }
+        }
+    }
+
+    fun runBenchmark() {
+        _viewState.value = DashboardViewState.ActiveJob(
+            statusMessage = "Starting benchmark suite...",
+            metricsPanel = "Initializing benchmark...",
+            gpuPanel = "System metrics initializing...",
+            essayText = "Preparing benchmark scenarios...",
+        )
+
+        scope.launch(contextPool.ioDispatcher) {
+            try {
+                val suite = ForensicsBenchmarkSuite(
+                    orchestrator = ollamaJobOrchestrator,
+                    model = ollamaModel,
+                )
+                val report = suite.runSuite(
+                    onProgress = { status ->
+                        _viewState.update { current ->
+                            if (current is DashboardViewState.ActiveJob) {
+                                val separator = if (current.essayText.isBlank()) "" else "\n\n"
+                                current.copy(
+                                    essayText = appendBoundedLog(
+                                        current.essayText,
+                                        separator + status,
+                                    )
+                                )
+                            } else current
+                        }
+                    },
+                    onChunk = { chunk ->
+                        _viewState.update { current ->
+                            if (current is DashboardViewState.ActiveJob) {
+                                current.copy(
+                                    essayText = appendBoundedLog(current.essayText, chunk)
+                                )
+                            } else current
+                        }
+                    },
+                )
+                withContext(contextPool.mainDispatcher) {
+                    _viewState.value = DashboardViewState.BenchmarkResults(report)
+                }
+            } catch (e: Exception) {
+                withContext(contextPool.mainDispatcher) {
+                    _viewState.value = DashboardViewState.PipelineFailure.ExecutionError(
+                        errorMessage = "Benchmark failed: ${e.message}",
+                    )
+                }
             }
         }
     }
@@ -168,15 +240,4 @@ class DashboardViewModel(
         }
     }
 
-    companion object {
-        val prompt = """
-            Project Architecture Constraints:
-                We are building a highly concurrent Kotlin transaction engine. It needs to be fast, handle 
-                signature verification safely in the background, and drop things if it gets too overloaded 
-                so it doesn't crash the JVM
-                    
-            Prompt
-                Write the complete production implementation. Make sure it explicitly uses a single-threaded 
-                event loop for the state changes and applies strict backpressure.""".trimIndent()
-    }
 }

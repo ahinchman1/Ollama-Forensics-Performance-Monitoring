@@ -20,6 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class OllamaJobOrchestrator(
     private val jobRunner: OllamaJobRunner,
@@ -53,7 +54,7 @@ class OllamaJobOrchestrator(
         onChunk: (String) -> Unit,
     ): Result<PerformanceMetrics> {
         startMetricsSampling()
-        return when (val ollamaData = jobRunner.runOllamaEssayJob(model, prompt, onChunk, coroutineContextProvider)) {
+        return when (val ollamaData = jobRunner.runOllamaEssayJob(model, prompt, onChunk)) {
             is Result.Success -> {
                 val peakMetrics = metricsCollector.getPeakMetricsCollected()
                 stopMetricsSampling()
@@ -78,15 +79,15 @@ class OllamaJobOrchestrator(
             jobResult.generatedText,
             peakMetrics,
         ).flatMap { evalData ->
-            getPerformanceData(prompt, jobResult, evalData)
+            getPerformanceData(prompt, jobResult, evalData, peakMetrics)
         }
 
     private fun getPerformanceData(
         prompt: String,
         jobResult: OllamaJobResult,
         ragasEvaluation: EvaluationResult,
+        peakMetrics: OSMetrics,
     ): Result<PerformanceMetrics> {
-        val peakMetrics = metricsCollector.getPeakMetricsCollected()
         val finalMetrics = mapOllamaResponseToDomain(
             prompt = prompt,
             ollamaJobResult = jobResult,
@@ -94,7 +95,6 @@ class OllamaJobOrchestrator(
             ragasEvaluation
         )
 
-        metricsCollector.stopMetricsDashboard()
         println("Final Metrics: $finalMetrics")
         return finalMetrics
     }
@@ -119,6 +119,7 @@ class OllamaJobOrchestrator(
         metricsSamplingJob = samplingScope.launch {
             while (isActive) {
                 metricsCollector.parseBtopData()
+                kotlinx.coroutines.delay(1_000.milliseconds)
             }
         }
     }

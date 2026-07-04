@@ -27,6 +27,9 @@ kotlin {
 
             implementation(fileTree("libs") { include("*.jar") })
         }
+        jvmMain.dependencies {
+            implementation(libs.kotlinx.coroutines.core)
+        }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }

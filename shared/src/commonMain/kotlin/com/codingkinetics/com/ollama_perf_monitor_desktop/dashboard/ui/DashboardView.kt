@@ -18,6 +18,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.codingkinetics.com.ollama_perf_monitor_desktop.benchmarking.BenchmarkReportView
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.model.DashboardViewState
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.model.DashboardViewModel
 import kotlinx.coroutines.delay
@@ -39,6 +40,7 @@ fun DashboardView(viewModel: DashboardViewModel) {
         is DashboardViewState.ActiveJob -> state.statusMessage
         is DashboardViewState.PipelineFailure -> "FAILURE: ${state.errorMessage}"
         is DashboardViewState.CompletedJob -> state.statusMessage
+        is DashboardViewState.BenchmarkResults -> "Benchmark Complete"
     }
 
     val currentMetricsContent = when (val state = uiState) {
@@ -75,42 +77,49 @@ fun DashboardView(viewModel: DashboardViewModel) {
             ) {
                 Text("Stop Pipeline")
             }
+            Button(
+                onClick = { viewModel.runBenchmark() },
+                enabled = uiState is DashboardViewState.Idle,
+            ) {
+                Text("Run Benchmark")
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(text = "Research Monitor:", style = MaterialTheme.typography.labelMedium)
-        Text(
-            text = currentStatusMessage,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 8.dp),
-        )
+        if (uiState is DashboardViewState.BenchmarkResults) {
+            BenchmarkReportView((uiState as DashboardViewState.BenchmarkResults).report)
+        } else {
+            Text(text = "Research Monitor:", style = MaterialTheme.typography.labelMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = currentStatusMessage, style = MaterialTheme.typography.bodyMedium)
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            ShellPanel(
-                title = "Metrics",
-                content = currentMetricsContent,
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                ShellPanel(
+                    title = "Metrics",
+                    content = currentMetricsContent,
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                )
 
-            ShellPanel(
-                title = "GPU / System",
-                content = currentGpuContent,
-                modifier = Modifier.weight(1f).fillMaxHeight(),
+                ShellPanel(
+                    title = "GPU / System",
+                    content = currentGpuContent,
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            EssayPanel(
+                title = "Essay Draft",
+                content = currentEssayContent,
+                modifier = Modifier.fillMaxWidth().weight(1f),
             )
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        EssayPanel(
-            title = "Essay Draft",
-            content = currentEssayContent,
-            modifier = Modifier.fillMaxWidth().weight(1f),
-        )
     }
 }

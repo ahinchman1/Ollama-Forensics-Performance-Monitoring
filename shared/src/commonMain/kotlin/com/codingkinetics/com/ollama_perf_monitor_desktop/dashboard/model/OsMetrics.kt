@@ -7,6 +7,7 @@ data class OSMetrics(
     val cores: List<Core> = listOf(),
     val cpuGraph: List<String> = listOf(),
     val threadCount: Int = 0,
+    val btopProcessCpuConsumption: Double = 0.0,
 )
 
 data class Core(

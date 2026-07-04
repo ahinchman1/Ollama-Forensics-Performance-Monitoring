@@ -13,7 +13,6 @@ interface OllamaJobRunner {
         model: String,
         prompt: String,
         onChunk: (String) -> Unit,
-        coroutineContextProvider: CoroutineContextProvider = CoroutineContextProviderImpl(),
     ): Result<OllamaJobResult>
 
     fun cleanupRuntimeResources()
