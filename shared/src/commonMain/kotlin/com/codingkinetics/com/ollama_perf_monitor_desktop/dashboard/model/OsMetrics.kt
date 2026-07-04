@@ -8,9 +8,11 @@ data class OSMetrics(
     val cpuGraph: List<String> = listOf(),
     val threadCount: Int = 0,
     val btopProcessCpuConsumption: Double = 0.0,
+    val aggregateCpuConsumption: Double = 0.0,
 )
 
 data class Core(
     val name: String,
     val temperature: Int,
+    val cpuPercentage: Double = 0.0,
 )

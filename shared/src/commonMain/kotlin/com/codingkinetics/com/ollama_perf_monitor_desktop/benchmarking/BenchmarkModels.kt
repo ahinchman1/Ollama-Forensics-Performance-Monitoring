@@ -51,6 +51,9 @@ data class BenchmarkSuiteReport(
     val peakBtopCpuConsumption: Double
         get() = results.maxOfOrNull { it.osMetrics.btopProcessCpuConsumption } ?: 0.0
 
+    val peakAggregateCpuConsumption: Double
+        get() = results.maxOfOrNull { it.osMetrics.aggregateCpuConsumption } ?: 0.0
+
     val peakTemperature: Int
         get() = results.maxOfOrNull { it.osMetrics.temperature } ?: 0
 
@@ -89,6 +92,7 @@ data class BenchmarkSuiteReport(
         appendLine("## Physical Hardware Strain Profile")
         appendLine("- Peak CPU Consumption (ps / absolute) : ${peakCpuConsumption}%")
         appendLine("- Peak CPU Load (btop / normalized)    : ${String.format("%.1f", peakBtopCpuConsumption)}%")
+        appendLine("- Peak Aggregate CPU (sum of cores)    : ${String.format("%.1f", peakAggregateCpuConsumption)}%")
         appendLine("- Peak Core Package Temp      : ${peakTemperature}°C")
         val coreDelta = results.flatMap { it.osMetrics.cores }
             .let { cores ->
@@ -112,6 +116,7 @@ data class BenchmarkSuiteReport(
             appendLine("- Total Duration: ${result.formattedTotalDuration}")
             appendLine("- Generation Speed: ${result.formattedGenerationSpeed}")
             appendLine("- Ingestion Speed: ${result.formattedIngestionSpeed}")
+            appendLine("- Aggregate CPU Load: ${String.format("%.1f", result.osMetrics.aggregateCpuConsumption)}%")
             appendLine()
         }
     }

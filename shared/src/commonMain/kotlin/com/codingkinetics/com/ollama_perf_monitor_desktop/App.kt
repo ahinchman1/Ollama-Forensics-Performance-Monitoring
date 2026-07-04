@@ -3,6 +3,7 @@ package com.codingkinetics.com.ollama_perf_monitor_desktop
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,7 +31,8 @@ val jsonClient = client.config {
 
 @Composable
 fun App(ollamaJobOrchestrator: OllamaJobOrchestrator) {
-    MaterialTheme {
+
+    OllamaForensicsTheme {
         val appScope = rememberCoroutineScope()
         val orchestrator = remember { ollamaJobOrchestrator }
         val viewModel = remember { DashboardViewModel(appScope, orchestrator) }

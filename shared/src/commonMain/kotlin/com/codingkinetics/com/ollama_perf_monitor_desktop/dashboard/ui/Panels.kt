@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 internal fun EssayPanel(title: String, content: String, modifier: Modifier = Modifier) {
     Column(modifier = modifier.background(MaterialTheme.colorScheme.surface).padding(12.dp)) {
-        Text(text = title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
+        Text(text = title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = content.ifBlank { "The essay will appear here once generation starts." },
@@ -33,7 +33,7 @@ internal fun EssayPanel(title: String, content: String, modifier: Modifier = Mod
 @Composable
 internal fun ShellPanel(title: String, content: String, modifier: Modifier = Modifier) {
     Column(modifier = modifier.background(MaterialTheme.colorScheme.surface).padding(12.dp)) {
-        Text(text = title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
+        Text(text = title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = content.ifBlank { "Waiting for shell output..." },

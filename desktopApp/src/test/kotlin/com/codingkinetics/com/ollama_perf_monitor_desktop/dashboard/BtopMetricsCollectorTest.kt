@@ -37,6 +37,7 @@ class BtopMetricsCollectorTest {
         assertEquals(54.0, metrics.btopProcessCpuConsumption, "btop-normalized CPU parsing from output failed")
         assertTrue(metrics.threadCount >= 0, "Thread count should be a valid non-negative value")
         assertEquals(6, metrics.cores.size, "Failed to capture all 6 distinct cores present in text rows")
+        assertEquals(316.0, metrics.aggregateCpuConsumption, "Aggregate CPU consumption should sum all core percentages (96+97+97+8+9+9 = 316)")
 
         val sortedCores = metrics.cores
         assertEquals("Core 0", sortedCores.first().name)
@@ -57,7 +58,7 @@ class BtopMetricsCollectorTest {
 
         // THEN
         assertTrue(result is Result.Success)
-        val metrics = (result as Result.Success).data
+        val metrics = result.data
 
         // The fallback calculation should average out Cores 0 and 1 ( (70 + 80) / 2 = 75 )
         assertEquals(75, metrics.temperature, "Fallback calculation failed to properly average available cores")

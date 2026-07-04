@@ -9,7 +9,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -24,6 +23,7 @@ fun BenchmarkReportView(report: BenchmarkSuiteReport) {
             Text(
                 text = "📊 Ollama Forensics Performance Report",
                 style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
         }
@@ -69,10 +69,10 @@ private fun PerformanceSummaryCard(report: BenchmarkSuiteReport) {
             Text("Peak Threads: ${report.peakThreadCount}")
             if (report.threadSpikeDetected) {
                 Text(
-                    text = "⚠️ Thread Spike Detected",
-                    color = Color(0xFFEF5350),
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                        text = "⚠️ Thread Spike Detected",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
             }
         }
     }
@@ -122,9 +122,9 @@ private fun BarChart(results: List<BenchmarkScenarioResult>) {
                         .height(barHeight)
                         .background(
                             when {
-                                result.hallucinationIndex > 0.5 -> Color(0xFFEF5350)
-                                result.hallucinationIndex > 0.25 -> Color(0xFFFFEE58)
-                                else -> Color(0xFF66BB6A)
+                                result.hallucinationIndex > 0.5 -> MaterialTheme.colorScheme.error
+                                result.hallucinationIndex > 0.25 -> MaterialTheme.colorScheme.secondary
+                                else -> MaterialTheme.colorScheme.tertiary
                             }
                         )
                 )
@@ -147,9 +147,9 @@ private fun ScenarioResultCard(result: BenchmarkScenarioResult) {
         colors = androidx.compose.material3.CardDefaults.cardColors(
             containerColor = when {
                 result.hallucinationIndex >= 0.49 && result.hallucinationIndex <= 0.51 -> 
-                    Color(0xFFFFF3E0)
+                    MaterialTheme.colorScheme.secondaryContainer
                 result.hallucinationIndex > 0.5 -> 
-                    Color(0xFFFFEBEE)
+                    MaterialTheme.colorScheme.errorContainer
                 else -> 
                     MaterialTheme.colorScheme.primaryContainer
             }

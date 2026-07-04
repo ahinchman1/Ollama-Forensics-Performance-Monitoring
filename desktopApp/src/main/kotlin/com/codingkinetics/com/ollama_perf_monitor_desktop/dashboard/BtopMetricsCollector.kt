@@ -17,7 +17,7 @@ import kotlin.collections.sortedBy
 class BtopMetricsCollector: MetricsCollector {
 
     private val uiBorderRegex = Regex("[│┤┐└┴┬├─┼┘┌]")
-    private val coreRegex = Regex("""C(\d+)\s+\d+%\s+(\d+)°C""")
+    private val coreRegex = Regex("""C(\d+)\s+(\d+(?:\.\d+)?)%\s+(\d+)°C""")
     private val globalCpuTempRegex = Regex("""CPU\s+.*?\s+(\d+)°C""")
     private val btopCpuRegex = Regex("""CPU\s+■+\s+(\d+(?:\.\d+)?)%""")
 
@@ -28,6 +28,7 @@ class BtopMetricsCollector: MetricsCollector {
     private var peakCpuGraph = mutableListOf<String>()
     private var peakThreadCount = 0
     private var peakBtopProcessCpuConsumption = 0.0
+    private var peakAggregateCpuConsumption = 0.0
 
     override fun captureMetricsInWindowPane(targetPane: String): String {
         return try {
@@ -132,6 +133,7 @@ override fun stopMetricsDashboard() {
             val telemetry = scrapeBtopTelemetry(cpuStats, lines)
             val coreTemps = getCoreTemperatures(cpuStats)
             val threadCount = captureOllamaThreadCount()
+            val aggregateCpu = cpuStats.cores.sumOf { it.cpuPercentage }
 
             getPeakMetrics(cpuStats, coreTemps, threadCount, telemetry, cpuGraph, btopCpu)
 
@@ -143,6 +145,7 @@ override fun stopMetricsDashboard() {
                 cpuTelemetry = telemetry,
                 threadCount = threadCount,
                 btopProcessCpuConsumption = btopCpu,
+                aggregateCpuConsumption = aggregateCpu,
             )
 
             return Result.Success(metrics)
@@ -160,7 +163,8 @@ override fun stopMetricsDashboard() {
             cores = peakCores.sortedBy { it.name.substringAfter(" ").toIntOrNull() ?: 0 },
             cpuGraph = peakCpuGraph,
             threadCount = peakThreadCount,
-            btopProcessCpuConsumption = peakBtopProcessCpuConsumption
+            btopProcessCpuConsumption = peakBtopProcessCpuConsumption,
+            aggregateCpuConsumption = peakAggregateCpuConsumption,
         )
     }
 
@@ -172,14 +176,17 @@ override fun stopMetricsDashboard() {
         cpuGraph: List<String>,
         btopCpu: Double,
     ) {
+        val aggregateCpu = cpuStats.cores.sumOf { it.cpuPercentage }
         val shouldUpdate = peakProcessCpuConsumption == 0L || peakTemperature == 0 ||
             cpuStats.processCpu >= peakProcessCpuConsumption || coreTemps >= peakTemperature ||
-            threadCount >= peakThreadCount || btopCpu > peakBtopProcessCpuConsumption
+            threadCount >= peakThreadCount || btopCpu > peakBtopProcessCpuConsumption ||
+            aggregateCpu > peakAggregateCpuConsumption
         if (shouldUpdate) {
             peakProcessCpuConsumption = maxOf(peakProcessCpuConsumption, cpuStats.processCpu)
             peakTemperature = maxOf(peakTemperature, coreTemps)
             peakThreadCount = maxOf(peakThreadCount, threadCount)
             peakBtopProcessCpuConsumption = maxOf(peakBtopProcessCpuConsumption, btopCpu)
+            peakAggregateCpuConsumption = maxOf(peakAggregateCpuConsumption, aggregateCpu)
             peakCpuTelemetry = telemetry
 
             if (cpuStats.cores.isNotEmpty()) {
@@ -235,6 +242,7 @@ override fun stopMetricsDashboard() {
         peakCpuGraph.clear()
         peakThreadCount = 0
         peakBtopProcessCpuConsumption = 0.0
+        peakAggregateCpuConsumption = 0.0
     }
 
     private fun parseGlobalCPUTempAndLoad(lines: List<String>): CpuSnapshotData {
@@ -253,8 +261,9 @@ override fun stopMetricsDashboard() {
 
                 coreRegex.findAll(line).forEach { match ->
                     val coreNumber = match.groupValues[1]
-                    val coreTemp = match.groupValues[2].toIntOrNull() ?: 0
-                    coresList.add(Core(name = "Core $coreNumber", temperature = coreTemp))
+                    val coreCpuPercent = match.groupValues[2].toDoubleOrNull() ?: 0.0
+                    val coreTemp = match.groupValues[3].toIntOrNull() ?: 0
+                    coresList.add(Core(name = "Core $coreNumber", temperature = coreTemp, cpuPercentage = coreCpuPercent))
                 }
             }
         } catch(e: Exception) {
