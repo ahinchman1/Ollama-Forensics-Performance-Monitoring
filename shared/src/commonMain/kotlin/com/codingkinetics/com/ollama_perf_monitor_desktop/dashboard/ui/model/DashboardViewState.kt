@@ -1,6 +1,7 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.model
 
 import androidx.compose.runtime.Immutable
+import com.codingkinetics.com.ollama_perf_monitor_desktop.benchmarking.BenchmarkSuiteReport
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaResponseCompletedData
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
 
@@ -28,6 +29,12 @@ sealed interface DashboardViewState {
             override val errorMessage: String,
             override val installHint: String = ""
         ) : PipelineFailure
+
+        data class RateLimited(
+            override val errorMessage: String,
+            override val installHint: String = "Wait for the rate limit to reset before retrying.",
+            val retryAfterSeconds: String = "60",
+        ) : PipelineFailure
     }
 
     data class CompletedJob(
@@ -36,5 +43,9 @@ sealed interface DashboardViewState {
         val gpuPanel: String,
         val essayText: String,
         val completedData: PerformanceMetrics,
+    ): DashboardViewState
+
+    data class BenchmarkResults(
+        val report: BenchmarkSuiteReport,
     ): DashboardViewState
 }

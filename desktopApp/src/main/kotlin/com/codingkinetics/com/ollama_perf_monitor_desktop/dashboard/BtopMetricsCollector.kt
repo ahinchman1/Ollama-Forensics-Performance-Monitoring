@@ -3,6 +3,7 @@ package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.MetricsCollector
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.Core
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuSnapshotData
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuTimeSeriesSnapshot
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OSMetrics
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.btopExecutable
@@ -17,11 +18,9 @@ import kotlin.collections.sortedBy
 class BtopMetricsCollector: MetricsCollector {
 
     private val uiBorderRegex = Regex("[│┤┐└┴┬├─┼┘┌]")
-    private val coreRegex = Regex("""C(\d+)\s+\d+%\s+(\d+)°C""")
+    private val coreRegex = Regex("""C(\d+)\s+(\d+(?:\.\d+)?)%\s+(\d+)°C""")
     private val globalCpuTempRegex = Regex("""CPU\s+.*?\s+(\d+)°C""")
-    private val ollamaProcessRegex = Regex("""\d+\s+ollama\s+\S+\s+\S+\s+.*?(\d+\.\d+)\s*""")
-    private val ollamaServiceRegex = Regex("""\d+\s+llama-s\s+\S+\s+\S+\s+.*?(\d+\.\d+)\s*""")
-    private val threadRegex = Regex("""(\d+)/(\d+)""")
+    private val btopCpuRegex = Regex("""CPU\s+■+\s+(\d+(?:\.\d+)?)%""")
 
     private var peakTemperature = 0
     private var peakProcessCpuConsumption = 0L
@@ -29,6 +28,9 @@ class BtopMetricsCollector: MetricsCollector {
     private var peakCores = mutableListOf<Core>()
     private var peakCpuGraph = mutableListOf<String>()
     private var peakThreadCount = 0
+    private var peakBtopProcessCpuConsumption = 0.0
+    private var peakAggregateCpuConsumption = 0.0
+    private val cpuTimeSeriesSnapshots = mutableListOf<CpuTimeSeriesSnapshot>()
 
     override fun captureMetricsInWindowPane(targetPane: String): String {
         return try {
@@ -37,8 +39,7 @@ class BtopMetricsCollector: MetricsCollector {
                 .start()
 
             process.inputStream.bufferedReader().use {
-                val text =  it.readText()
-                print(text)
+                val text = it.readText()
                 parseBtopDataFromString(text)
                 text
             }.trimEnd()
@@ -130,11 +131,23 @@ override fun stopMetricsDashboard() {
             val lines = cleanText.lines()
 
             val cpuStats = parseGlobalCPUTempAndLoad(lines)
+            val btopCpu = parseBtopCpuPercentage(rawText)
             val telemetry = scrapeBtopTelemetry(cpuStats, lines)
             val coreTemps = getCoreTemperatures(cpuStats)
             val threadCount = captureOllamaThreadCount()
+            val aggregateCpu = cpuStats.cores.sumOf { it.cpuPercentage }
 
-            getPeakMetrics(cpuStats, coreTemps, threadCount, telemetry, cpuGraph)
+            getPeakMetrics(cpuStats, coreTemps, threadCount, telemetry, cpuGraph, btopCpu)
+
+            cpuTimeSeriesSnapshots.add(
+                CpuTimeSeriesSnapshot(
+                    timestampMillis = System.currentTimeMillis(),
+                    cpuConsumption = btopCpu,
+                    aggregateCpuConsumption = aggregateCpu,
+                    temperature = coreTemps,
+                    threadCount = threadCount,
+                )
+            )
 
             val metrics = OSMetrics(
                 cores = cpuStats.cores.sortedBy { it.name.substringAfter(" ").toIntOrNull() ?: 0 },
@@ -143,6 +156,8 @@ override fun stopMetricsDashboard() {
                 cpuGraph = cpuGraph,
                 cpuTelemetry = telemetry,
                 threadCount = threadCount,
+                btopProcessCpuConsumption = btopCpu,
+                aggregateCpuConsumption = aggregateCpu,
             )
 
             return Result.Success(metrics)
@@ -159,8 +174,14 @@ override fun stopMetricsDashboard() {
             cpuTelemetry = peakCpuTelemetry,
             cores = peakCores.sortedBy { it.name.substringAfter(" ").toIntOrNull() ?: 0 },
             cpuGraph = peakCpuGraph,
-            threadCount = peakThreadCount
+            threadCount = peakThreadCount,
+            btopProcessCpuConsumption = peakBtopProcessCpuConsumption,
+            aggregateCpuConsumption = peakAggregateCpuConsumption,
         )
+    }
+
+    override fun getCpuTimeSeriesSnapshots(): List<CpuTimeSeriesSnapshot> {
+        return cpuTimeSeriesSnapshots.toList()
     }
 
     private fun getPeakMetrics(
@@ -169,13 +190,19 @@ override fun stopMetricsDashboard() {
         threadCount: Int,
         telemetry: String,
         cpuGraph: List<String>,
+        btopCpu: Double,
     ) {
+        val aggregateCpu = cpuStats.cores.sumOf { it.cpuPercentage }
         val shouldUpdate = peakProcessCpuConsumption == 0L || peakTemperature == 0 ||
-            cpuStats.processCpu >= peakProcessCpuConsumption || coreTemps >= peakTemperature
+            cpuStats.processCpu >= peakProcessCpuConsumption || coreTemps >= peakTemperature ||
+            threadCount >= peakThreadCount || btopCpu > peakBtopProcessCpuConsumption ||
+            aggregateCpu > peakAggregateCpuConsumption
         if (shouldUpdate) {
             peakProcessCpuConsumption = maxOf(peakProcessCpuConsumption, cpuStats.processCpu)
             peakTemperature = maxOf(peakTemperature, coreTemps)
             peakThreadCount = maxOf(peakThreadCount, threadCount)
+            peakBtopProcessCpuConsumption = maxOf(peakBtopProcessCpuConsumption, btopCpu)
+            peakAggregateCpuConsumption = maxOf(peakAggregateCpuConsumption, aggregateCpu)
             peakCpuTelemetry = telemetry
 
             if (cpuStats.cores.isNotEmpty()) {
@@ -185,6 +212,10 @@ override fun stopMetricsDashboard() {
                 peakCpuGraph = cpuGraph.toMutableList()
             }
         }
+    }
+
+    private fun parseBtopCpuPercentage(rawText: String): Double {
+        return btopCpuRegex.find(rawText)?.groupValues?.getOrNull(1)?.toDoubleOrNull() ?: 0.0
     }
 
     // find the core CPU rows by anchoring on the cpu header and the inner box layout
@@ -226,11 +257,16 @@ override fun stopMetricsDashboard() {
         peakCores.clear()
         peakCpuGraph.clear()
         peakThreadCount = 0
+        peakBtopProcessCpuConsumption = 0.0
+        peakAggregateCpuConsumption = 0.0
+    }
+
+    override fun resetTimeSeriesSnapshots() {
+        cpuTimeSeriesSnapshots.clear()
     }
 
     private fun parseGlobalCPUTempAndLoad(lines: List<String>): CpuSnapshotData {
         var globalTemperature = 0
-        var processCpu = 0L
         val coresList = mutableListOf<Core>()
 
         println("DEBUG: Total lines sent to parser: ${lines.size}")
@@ -245,57 +281,119 @@ override fun stopMetricsDashboard() {
 
                 coreRegex.findAll(line).forEach { match ->
                     val coreNumber = match.groupValues[1]
-                    val coreTemp = match.groupValues[2].toIntOrNull() ?: 0
-                    coresList.add(Core(name = "Core $coreNumber", temperature = coreTemp))
-                }
-
-                if (line.contains("ollama", ignoreCase = true) || line.contains("llama-s", ignoreCase = true)) {
-                    ollamaProcessRegex.find(line)?.let { match ->
-                        processCpu = match.groupValues[1].toDoubleOrNull()?.toLong() ?: 0L
-                    }
-                    if (processCpu == 0L) {
-                        ollamaServiceRegex.find(line)?.let { match ->
-                            processCpu = match.groupValues[1].toDoubleOrNull()?.toLong() ?: 0L
-                        }
-                    }
+                    val coreCpuPercent = match.groupValues[2].toDoubleOrNull() ?: 0.0
+                    val coreTemp = match.groupValues[3].toIntOrNull() ?: 0
+                    coresList.add(Core(name = "Core $coreNumber", temperature = coreTemp, cpuPercentage = coreCpuPercent))
                 }
             }
         } catch(e: Exception) {
             println("Unable to parse global CPU temp and average loads. Cause: $e")
         }
-        return CpuSnapshotData(globalTemperature, processCpu, coresList)
+        return CpuSnapshotData(
+            globalTemperature = globalTemperature,
+            processCpu = captureOllamaProcessCpuConsumption(),
+            cores = coresList,
+        )
     }
 
     private fun scrapeBtopTelemetry(cpuStats: CpuSnapshotData, lines: List<String>): String {
-        val ollamaLine = lines.firstOrNull { 
-            (it.contains("ollama") || it.contains("llama-s")) && it.contains(Regex("\\d+\\.\\d+")) 
-        }
-        val pid = ollamaLine?.let { line ->
-            Regex("""(\d+)\s+(?:ollama|llama-s)""").find(line)?.groupValues?.get(1)?.toLongOrNull()
-        } ?: 0L
-
-        val ramAllocation = ollamaLine?.let { line ->
-            Regex("""(\d+\.\d+[G|M])""").find(line)?.groupValues?.get(1)
-        } ?: "0.0G"
-
-        return "PID: $pid | CPU: ${cpuStats.processCpu.toDouble()}% | RAM Used: $ramAllocation"
+        return captureOllamaProcessTelemetry()
+            ?: "PID: 0 | CPU: ${cpuStats.processCpu.toDouble()}% | RAM Used: 0.0G"
     }
 
     private fun captureOllamaThreadCount(): Int {
         return try {
-            val pidProcess = ProcessBuilder("pgrep", "-f", "ollama serve").start()
-            val pid = pidProcess.inputStream.bufferedReader().use { it.readText().trim() }
+            val pids = resolveOllamaRuntimePids()
+            if (pids.isEmpty()) return 0
 
-            if (pid.isBlank()) return 0
+            pids.sumOf { pid ->
+                val process = ProcessBuilder("ps", "-M", "-p", pid).start()
+                val lines = process.inputStream.bufferedReader().use { it.readLines() }
 
-            val countPidThreads = ProcessBuilder("ps", "-M", "-p", pid).start()
-            val lines = countPidThreads.inputStream.bufferedReader().use { it.readLines() }
-
-            // subtract 1 to account for the command column header line
-            (lines.size - 1).coerceAtLeast(0)
+                (lines.size - 1).coerceAtLeast(0)
+            }
         } catch (e: Exception) {
             println("Failed to read system thread allocation: ${e.message}")
             0
+        }
+    }
+
+    private fun resolveOllamaRuntimePids(): List<String> {
+        val patterns = listOf("ollama serve", "llama-server")
+
+        return patterns.flatMap { pattern ->
+            try {
+                val process = ProcessBuilder("pgrep", "-f", pattern).start()
+                process.inputStream.bufferedReader()
+                    .use { it.readLines() }
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }.distinct()
+    }
+
+    private fun captureOllamaProcessCpuConsumption(): Long {
+        return try {
+            val process = ProcessBuilder("ps", "-axo", "pid,comm,pcpu,rss,command")
+                .start()
+
+            val lines = process.inputStream.bufferedReader().use { it.readLines() }
+
+            lines
+                .drop(1)
+                .filter { line ->
+                    line.contains("ollama serve", ignoreCase = true) ||
+                            line.contains("llama-server", ignoreCase = true)
+                }
+                .sumOf { line ->
+                    val columns = line.trim().split(Regex("\\s+"))
+                    columns.getOrNull(2)?.toDoubleOrNull() ?: 0.0
+                }
+                .toLong()
+        } catch (e: Exception) {
+            println("Failed to read Ollama process CPU usage: ${e.message}")
+            0L
+        }
+    }
+
+    private fun captureOllamaProcessTelemetry(): String? {
+        return try {
+            val process = ProcessBuilder("ps", "-axo", "pid,comm,pcpu,rss,command")
+                .start()
+
+            val lines = process.inputStream.bufferedReader().use { it.readLines() }
+
+            val matchingRows = lines
+                .drop(1)
+                .filter { line ->
+                    line.contains("ollama serve", ignoreCase = true) ||
+                            line.contains("llama-server", ignoreCase = true)
+                }
+
+            if (matchingRows.isEmpty()) return null
+
+            val totalCpu = matchingRows.sumOf { line ->
+                val columns = line.trim().split(Regex("\\s+"))
+                columns.getOrNull(2)?.toDoubleOrNull() ?: 0.0
+            }
+
+            val totalRssKb = matchingRows.sumOf { line ->
+                val columns = line.trim().split(Regex("\\s+"))
+                columns.getOrNull(3)?.toLongOrNull() ?: 0L
+            }
+
+            val pids = matchingRows.mapNotNull { line ->
+                line.trim().split(Regex("\\s+")).getOrNull(0)
+            }
+
+            val ramGb = totalRssKb / 1024.0 / 1024.0
+
+            "PID(s): ${pids.joinToString(",")} | CPU: ${"%.1f".format(totalCpu)}% | RAM Used: ${"%.2f".format(ramGb)}G"
+        } catch (e: Exception) {
+            println("Failed to read Ollama process telemetry: ${e.message}")
+            null
         }
     }
 

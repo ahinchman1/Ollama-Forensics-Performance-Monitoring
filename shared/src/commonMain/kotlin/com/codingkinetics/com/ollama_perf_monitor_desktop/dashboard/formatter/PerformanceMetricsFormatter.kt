@@ -21,10 +21,11 @@ class PerformanceMetricsFormatter {
               ├── Tokens Streamed:  ${metrics.generatedTokensCount}
               └── Generation Speed: ${metrics.formattedGenerationSpeed}
             
-              [ HARDWARE FORENSICS SUMMARY ]
-              PROCESSOR CPU LOAD: ${metrics.osMetrics.temperature}°F Avg Total Package
-              └── Ollama Active CPU Strain: ${metrics.osMetrics.processCpuConsumption}%
-            ================================================================================
+               [ HARDWARE FORENSICS SUMMARY ]
+               PROCESSOR CPU LOAD: ${metrics.osMetrics.temperature}°F Avg Total Package
+               ├── Ollama Active CPU Strain (ps / absolute): ${metrics.osMetrics.processCpuConsumption}%
+               └── Ollama CPU Load (btop / normalized)       : ${metrics.osMetrics.btopProcessCpuConsumption}%
+             ================================================================================
         """.trimIndent()
     }
 

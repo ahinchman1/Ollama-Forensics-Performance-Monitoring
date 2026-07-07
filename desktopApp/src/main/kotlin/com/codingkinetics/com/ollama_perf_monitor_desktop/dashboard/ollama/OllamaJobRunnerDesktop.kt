@@ -42,7 +42,7 @@ class OllamaJobRunnerDesktop(
     private val ollamaStreamingEndpointUrl = URL("$ollamaBaseUrl/api/generate")
 
     override fun startOllamaServer() = try {
-        runCommandIgnoringErrors("pkill", "-f", "ollama serve")
+        killOllamaRuntimeProcesses()
         val userHome = System.getProperty("user.home")
         val logFile = File(userHome, "ollama_server.log")
 
@@ -104,7 +104,7 @@ class OllamaJobRunnerDesktop(
         model: String,
         prompt: String,
         onChunk: (String) -> Unit,
-        coroutineContextProvider: CoroutineContextProvider,
+        onTokenProgress: (promptEvalCount: Long, evalCount: Long) -> Unit,
     ): Result<OllamaJobResult> {
         var connection: HttpURLConnection? = null
         return try {
@@ -137,9 +137,14 @@ class OllamaJobRunnerDesktop(
 
                 var finalResultData: OllamaJobResult? = null
 
-                streamRawJsonChunks(connection, onChunk) { output, completedData ->
-                    finalResultData = OllamaJobResult(generatedText = output, completedData = completedData)
-                }
+                streamRawJsonChunks(
+                    connection,
+                    onChunk,
+                    { output, completedData ->
+                        finalResultData = OllamaJobResult(generatedText = output, completedData = completedData)
+                    },
+                    onTokenProgress,
+                )
 
                 finalResultData?.let { result ->
                     println("Generated Text:\n${result.generatedText}")
@@ -164,6 +169,7 @@ class OllamaJobRunnerDesktop(
         connection: HttpURLConnection,
         onChunk: (String) -> Unit,
         onAiJobComplete: (String, OllamaResponseCompletedData) -> Unit,
+        onTokenProgress: (promptEvalCount: Long, evalCount: Long) -> Unit,
     ) {
         val output = StringBuilder()
         connection.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
@@ -184,6 +190,8 @@ class OllamaJobRunnerDesktop(
                         val finalData = jsonWorker.decodeFromString<OllamaResponseCompletedData>(currentLine)
                         onAiJobComplete(outputStr, finalData)
                     }
+
+                    onTokenProgress(chunk.promptEvalCount, chunk.evalCount)
                 }.onFailure { e ->
                     println("Skipping malformed or incomplete JSON frame: $currentLine. Error: ${e.message}")
                 }
@@ -194,6 +202,13 @@ class OllamaJobRunnerDesktop(
     override fun cleanupRuntimeResources() {
         serverProcess?.destroyForcibly()
         serverProcess = null
+        killOllamaRuntimeProcesses()
+    }
+
+    private fun killOllamaRuntimeProcesses() {
+        runCommandIgnoringErrors("pkill", "-f", "llama-server")
+        runCommandIgnoringErrors("pkill", "-f", "ollama serve")
+        runCommandIgnoringErrors("pkill", "-f", "ollama")
     }
 
     private fun writeOutputToTmp(text: String) {

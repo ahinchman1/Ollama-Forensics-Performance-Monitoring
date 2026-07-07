@@ -29,12 +29,13 @@ class ForensicsEvaluatorTest {
 
     @Test
     fun `evaluateFaithfulness returns Success with correct scores when API responds normally`() = runBlocking {
+        val groqResponse = """{"choices":[{"message":{"content":"{\"faithfulnessScore\": 0.85}"}}]}"""
         val mockEngine = MockEngine { request ->
             assertEquals("https://api.groq.com/openai/v1/chat/completions", request.url.toString())
             assertEquals(HttpMethod.Post, request.method)
 
             respond(
-                content = ByteReadChannel("""{"faithfulnessScore": 0.85}"""),
+                content = ByteReadChannel(groqResponse),
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             )
@@ -74,12 +75,16 @@ class ForensicsEvaluatorTest {
 
     @Test
     fun `evaluateFaithfulness retries with repair prompt and accepts valid JSON on second attempt`() = runBlocking {
+        var callCount = 0
         val mockEngine = MockEngine { request ->
-            assertEquals("https://api.groq.com/openai/v1/chat/completions", request.url.toString())
-            assertEquals(HttpMethod.Post, request.method)
-
+            callCount++
+            val content = if (callCount == 1) {
+                """{"choices":[{"message":{"content":"invalid response"}}]}"""
+            } else {
+                """{"choices":[{"message":{"content":"{\"faithfulnessScore\": 0.42}"}}]}"""
+            }
             respond(
-                content = ByteReadChannel("""{"faithfulnessScore": 0.42}"""),
+                content = ByteReadChannel(content),
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             )
@@ -99,7 +104,7 @@ class ForensicsEvaluatorTest {
     fun `evaluateFaithfulness returns 0-5 fallback when both attempts fail`() = runBlocking {
         val mockEngine = MockEngine { _ ->
             respond(
-                content = ByteReadChannel("completely invalid response with no numbers"),
+                content = ByteReadChannel("""{"choices":[{"message":{"content":"completely invalid response with no numbers"}}]}"""),
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             )
@@ -119,7 +124,7 @@ class ForensicsEvaluatorTest {
     fun `evaluateFaithfulness extracts decimal from prose when no JSON present`() = runBlocking {
         val mockEngine = MockEngine { _ ->
             respond(
-                content = ByteReadChannel("The faithfulness score is approximately 0.72."),
+                content = ByteReadChannel("""{"choices":[{"message":{"content":"The faithfulness score is approximately 0.72."}}]}"""),
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             )

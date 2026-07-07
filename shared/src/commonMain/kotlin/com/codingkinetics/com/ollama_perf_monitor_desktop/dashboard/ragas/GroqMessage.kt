@@ -23,3 +23,13 @@ data class EvaluationResult(
     val faithfulnessScore: Double,
     val hallucinationIndex: Double,
 )
+
+@Serializable
+data class GroqResponse(
+    val choices: List<Choice>
+)
+
+@Serializable
+data class Choice(
+    val message: GroqMessage
+)

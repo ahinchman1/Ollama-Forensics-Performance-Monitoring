@@ -8,9 +8,16 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.serialization.json.Json
 
 class ForensicsEvaluator(private val client: HttpClient) {
     private val apiKey = System.getenv("GROQ_API_KEY") ?: ""
+    private val json = Json { ignoreUnknownKeys = true }
+
+    class GroqRateLimitException(
+        message: String,
+        val retryAfterSeconds: String = "60"
+    ) : IllegalStateException(message)
 
     suspend fun evaluateFaithfulness(
         prompt: String,
@@ -44,19 +51,21 @@ class ForensicsEvaluator(private val client: HttpClient) {
 
         try {
             val firstRaw = callGroq(systemPrompt, userPrompt)
-            println("First raw: $firstRaw")
+            println("[DEBUG] First raw response: ${firstRaw.take(500)}")
             val firstScore = extractScoreFromJson(firstRaw)
-            if (firstScore != FALLBACK_SCORE) {
+            val firstValid = isScoreValid(firstRaw, firstScore)
+            if (firstValid) {
                 return@withContext Result.Success(EvaluationResult(firstScore, 1.0 - firstScore))
             }
 
             val repairPrompt = "Your last reply was invalid. Output ONLY JSON: {\"faithfulnessScore\": 0.85}"
             val secondRaw = callGroq(systemPrompt, repairPrompt)
+            println("[DEBUG] Second raw response: ${secondRaw.take(500)}")
             val secondScore = extractScoreFromJson(secondRaw)
 
             Result.Success(EvaluationResult(secondScore, 1.0 - secondScore))
         } catch (e: Exception) {
-            println("Forensics evaluation failed: ${e.message}")
+            println("[ERROR] Forensics evaluation failed: ${e.message}")
             Result.Failure(e)
         }
     }
@@ -81,6 +90,12 @@ class ForensicsEvaluator(private val client: HttpClient) {
             val errorBody = httpResponse.bodyAsText()
             val message = runCatching { httpResponse.body<GroqError>() }.getOrNull()?.error?.message
                 ?: errorBody.take(200)
+            
+            if (httpResponse.status == HttpStatusCode.TooManyRequests) {
+                val retryAfter = httpResponse.headers["Retry-After"] ?: "60"
+                throw GroqRateLimitException("Groq rate limited. Retry after $retryAfter seconds.", retryAfter)
+            }
+            
             throw Exception("Groq API error ${httpResponse.status}: $message")
         }
 
@@ -88,37 +103,48 @@ class ForensicsEvaluator(private val client: HttpClient) {
     }
 
     private fun extractScoreFromJson(rawJson: String): Double {
-        val content = extractGroqContent(rawJson) ?: rawJson
-        println("[DEBUG] Extracted Groq content: ${content.take(200)}")
+        val content = extractGroqContent(rawJson)
+        println("[DEBUG] Extracted content for parsing: ${content?.take(200) ?: rawJson.take(200)}")
 
-        val direct = """"faithfulnessScore"\s*[:=,]\s*([0-9]*\.?[0-9]+)""".toRegex().find(content)
+        val direct = """"faithfulnessScore"\s*[:=,]\s*([0-9]*\.?[0-9]+)""".toRegex().find(content ?: rawJson)
         if (direct != null) {
             val score = direct.groupValues[1].toDoubleOrNull()?.coerceIn(0.0, 1.0)
-            println("[DEBUG] Direct faithfulnessScore regex matched: ${direct.groupValues[1]} → $score")
+            println("[DEBUG] Direct faithfulnessScore regex matched: '${direct.groupValues[1]}' → $score")
             return score ?: FALLBACK_SCORE
         }
 
-        val alt = """"?(score|faithfulness)"?\s*[:=,]\s*([0-9]*\.?[0-9]+)""".toRegex().find(content)
+        val alt = """"?(score|faithfulness)"?\s*[:=,]\s*([0-9]*\.?[0-9]+)""".toRegex().find(content ?: rawJson)
         if (alt != null) {
             val score = alt.groupValues[2].toDoubleOrNull()?.coerceIn(0.0, 1.0)
-            println("[DEBUG] Alt key '${alt.groupValues[1]}' matched: ${alt.groupValues[2]} → $score")
+            println("[DEBUG] Alt key '${alt.groupValues[1]}' matched: '${alt.groupValues[2]}' → $score")
             return score ?: FALLBACK_SCORE
         }
 
-        val decimal = Regex("""([0-9]*\.[0-9]+)""").find(content)
+        val decimal = Regex("""([0-9]*\.[0-9]+)""").find(content ?: rawJson)
         val decimalScore = decimal?.groupValues?.get(1)?.toDoubleOrNull()?.coerceIn(0.0, 1.0)
-        println("[DEBUG] No key match, decimal fallback: $decimalScore")
+        println("[DEBUG] No key match, decimal fallback: $decimalScore (from content: ${content != null})")
         return decimalScore ?: FALLBACK_SCORE
     }
 
     private fun extractGroqContent(rawJson: String): String? {
-        val contentMatch = Regex("\"content\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"").find(rawJson)
-        val extracted = contentMatch?.groupValues?.get(1)
-            ?.replace("\\\"", "\"")
-            ?.replace("\\\\", "\\")
-        println("[DEBUG] Raw Groq content match: ${contentMatch?.groupValues?.get(1)?.take(100)}")
-        println("[DEBUG] After unescape: ${extracted?.take(100)}")
-        return extracted
+        return try {
+            val response = json.decodeFromString(GroqResponse.serializer(), rawJson)
+            response.choices.firstOrNull()?.message?.content?.also {
+                println("[DEBUG] Parsed Groq content via JSON: ${it.take(100)}")
+            }
+        } catch (e: Exception) {
+            println("[DEBUG] Failed to parse Groq JSON: ${e.message}")
+            println("[DEBUG] Raw response: ${rawJson.take(300)}")
+            null
+        }
+    }
+
+    private fun isScoreValid(rawJson: String, score: Double): Boolean {
+        val content = extractGroqContent(rawJson)
+        val hasFaithfulnessKey = content?.contains("faithfulnessScore") == true
+        val usedDecimalFallback = !hasFaithfulnessKey && Regex("""([0-9]*\.[0-9]+)""").find(content ?: rawJson) != null
+        println("[DEBUG] isScoreValid: score=$score, hasFaithfulnessKey=$hasFaithfulnessKey, usedDecimalFallback=$usedDecimalFallback")
+        return hasFaithfulnessKey
     }
 
     companion object {

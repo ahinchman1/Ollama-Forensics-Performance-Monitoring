@@ -1,0 +1,1084 @@
+8:53:42 AM: Executing ':desktopApp:com.codingkinetics.com.ollama_perf_monitor_desktop.MainKt.main()'…
+
+Reusing configuration cache.
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :shared:convertXmlValueResourcesForJvmMain NO-SOURCE
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :shared:generateComposeResClass UP-TO-DATE
+> Task :shared:generateExpectResourceCollectorsForCommonMain UP-TO-DATE
+> Task :shared:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForJvmMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :shared:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:checkJvmMainComposeLibrariesCompatibility
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForJvmMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :shared:generateResourceAccessorsForJvmMain NO-SOURCE
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :shared:copyNonXmlValueResourcesForCommonMain UP-TO-DATE
+> Task :desktopApp:processResources UP-TO-DATE
+> Task :shared:prepareComposeResourcesTaskForCommonMain UP-TO-DATE
+> Task :shared:generateResourceAccessorsForCommonMain UP-TO-DATE
+> Task :shared:assembleJvmMainResources UP-TO-DATE
+> Task :shared:generateActualResourceCollectorsForJvmMain UP-TO-DATE
+> Task :shared:jvmProcessResources UP-TO-DATE
+> Task :shared:processJvmMainResources SKIPPED
+> Task :shared:compileKotlinJvm UP-TO-DATE
+> Task :shared:compileJvmMainJava NO-SOURCE
+> Task :shared:jvmMainClasses UP-TO-DATE
+> Task :shared:jvmJar UP-TO-DATE
+> Task :desktopApp:compileKotlin UP-TO-DATE
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:classes UP-TO-DATE
+
+> Task :desktopApp:com.codingkinetics.com.ollama_perf_monitor_desktop.MainKt.main()
+SLF4J(W): No SLF4J providers were found.
+SLF4J(W): Defaulting to no-operation (NOP) logger implementation
+SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
+DEBUG: Total lines sent to parser: 1
+Initializing Ollama Server via target: /Users/amandahinchman-dominguez/Documents/repositories/ollama/ollama
+Directing runtime logs straight to absolute path: /Users/amandahinchman-dominguez/ollama_server.log
+DEBUG: Total lines sent to parser: 1
+
+============================================================
+Running: Baseline Control (01)
+Prompt: Explain the concept of token generation in large language models. Keep your resp...
+============================================================
+
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+Generated Text:
+Token generation is a key component of large language models (LLMs) that enables them to predict and generate text. In this process, the model receives an input sequence and predicts the next possible token in the sequence. The predicted token is then added to the output sequence.
+
+The concept of token generation can be broken down into two main stages: prediction and decoding. Prediction involves using a neural network to predict the probability distribution over all possible tokens given the context of the input sequence. Decoding, on the other hand, involves selecting the most likely next token based on the predicted distribution.
+
+A concrete example of token generation is shown in the BERT (Bidirectional Encoder Representations from Transformers) model. In this case, when an input sentence "I love to ___________" is passed through the BERT model, the model predicts a possible completion for the sentence, such as "___________ books". The predicted tokens are then decoded to form the final output sequence.
+
+Token generation is essential for LLMs as it allows them to generate coherent and context-dependent text.
+Output written to: /var/folders/jr/lkh2q579551fh_xk9c67kl240000gn/T/ollama_output_20260707_085521.txt
+------ Ollama Response Completed Data ----
+OllamaResponseCompletedData(model=llama3.2, createdAt=2026-07-07T14:55:21.120664Z, response=, done=true, doneReason=stop, totalDuration=64174909892, loadDuration=3718199082, promptEvalCount=52, promptEvalDuration=8626592162, generatedTokenCount=213, generationDuration=51433518618)
+DEBUG: Total lines sent to parser: 25
+------BTOP Metrics Captured ----
+╭─┐¹cpu┌──┐menu┌┐preset *┌──────────┐08:55:20┌────┐BAT▼ 75% 02:35┌┐- 2000ms +┌─╮
+│                    ⣀⣀⢀⣀⣀⣀⣀⣠⣄⣄⡀   ⢀╭─┐i9-9980HK┌────────────────────────┐2.4┌╮│
+│                    ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│CPU ■■■■■■■■■■■■■■■■■■■■  71% ⣶⣶⣶⣶⣶  79°C││
+│                  ⣴⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│C0  95%  86°C│C2  95%  87°C│C4  95%  86°C││
+│                  ⠻⡿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│C1  29%  86°C│C3  29%  87°C│C5  35%  86°C││
+│                    ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│                Load avg: 10.35 5.81 4.66││
+│ up 10d 19:51       ⠉⠉⠈⠉⠉⠉⠉⠙⠋⠋⠁   ⠈╰─────────────────────────────────────────╯│
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─┐²mem┌──────────┬─┐disks┌───┐io┌─╮╭─┐⁴proc┌┐filter┌─────┐tree┌┐← cpu lazy →┌─╮
+│ Total: 32.0 GiB ├─root──────465G─┤│    Pid: Program  User:  MemB       Cpu% ↑│
+│ U ⣤⣤⣤⣤⣤⣤⣤17.1 Gi│8.0K⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀  ││   52535 ollama  aman+  2.4G ⣤⣤⣤⣤⣤ 49.2  █│
+│ A ⣤⣤⣤⣤⣤⣤⣤14.8 Gi│U ■■■■■■■■■ 193G││   53300 pgrep   aman+  1.5M ⣀⣀⣀⣀⣀  0.0   │
+│ C ⣀⣀⣀⣀⣀⣀⣀6.59 Gi├─swap──────2.0G─┤│   53301 pgrep   aman+  908K ⣀⣀⣀⣀⣀  0.0   │
+│ F ⡀⡀⡀⡀⡀⡀⡀223 MiB│U ■■■■■■■■■ 1.0G││   52455 Google  aman+  486M ⣀⣀⣀⣀⣀  0.9   │
+├─────────────────├─Preboot───465G─┤│   10555 kilo    aman+  1.0G ⣀⣀⣀⣀⣀  6.3   │
+│                 │ IO ⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀  ││   52476 java    aman+  300M ⣀⣀⣀⣀⣀  0.6   │
+╰─────────────────┴────────────────╯│   52926 Google  aman+  243M ⣀⣀⣀⣀⣀  0.0   │
+╭─┐³net┌────┐auto┌┐zero┌┐←b en0 n→┌╮│   49884 Google  aman+  1.3G ⣀⣀⣀⣀⣀  0.1   │
+│10K    ⢀       ╭─┐download┌──────╮││   99616 idea    aman+  3.4G ⣀⣀⣀⣀⣀  1.4   │
+│⣀⣀⣀⣀⣦⣀⣀⣸⣀⣀⣀⣀⣀⣀⣀│▼ 0 Byte/s       │││   52483 VTEncod aman+  236M ⣀⣀⣀⣀⣀  0.2   │
+│⠉⠉⠉⠉⠿⠉⠉⢹⠉⠉⠉⠉⠉⠉⠉│                 │││   37815 Google  aman+  746M ⣀⣀⣀⣀⣀  0.0   │
+│       ⢸       │▲ 0 Byte/s       │││   52481 screenc aman+   51M ⣀⣀⣀⣀⣀  0.0   │
+│10K    ⠘       ╰─┘upload└────────╯││   52951 screenc aman+   22M ⣀⣀⣀⣀⣀  0.0  ↓│
+╰──────────────────────────────────╯╰┘↑ select ↓└┘info ↵└┘signals└┘N────┘0/700└╯
+Audit text length: 1130 chars
+Analyzing cross-domain statement alignment between hardware truth and generated text...
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+[DEBUG] First raw response: {"id":"chatcmpl-004bc3ec-a816-4cd5-b3f8-94aa55482d25","object":"chat.completion","created":1783436122,"model":"llama-3.3-70b-versatile","choices":[{"index":0,"message":{"role":"assistant","content":"{\"faithfulnessScore\": 0.00}"},"logprobs":null,"finish_reason":"stop"}],"usage":{"queue_time":0.008835894,"prompt_tokens":843,"prompt_time":0.119276787,"completion_tokens":11,"completion_time":0.016261351,"total_tokens":854,"total_time":0.135538138},"usage_breakdown":null,"system_fingerprint":"fp_43
+[DEBUG] Parsed Groq content via JSON: {"faithfulnessScore": 0.00}
+[DEBUG] Extracted content for parsing: {"faithfulnessScore": 0.00}
+[DEBUG] Direct faithfulnessScore regex matched: '0.00' → 0.0
+[DEBUG] Parsed Groq content via JSON: {"faithfulnessScore": 0.00}
+[DEBUG] isScoreValid: score=0.0, hasFaithfulnessKey=true, usedDecimalFallback=false
+
+====================================================================
+ OLLAMA INFERENCE PERFORMANCE FORENSICS (RAGAS VERIFIED)
+====================================================================
+ Faithfulness Score   : 0.0000
+ Hallucination Index  : 1.0000
+====================================================================
+Final Metrics: Success(data=====================================================================
+OLLAMA INFERENCE PERFORMANCE FORENSICS
+====================================================================
+Pipeline Status       : Done (Reason: stop)
+Total Execution Time  : 64.17s
+
+CORE VELOCITY ENGINE METRICS:
+--------------------------------------------------------------------
+Prompt Ingestion Speed: 6.03 t/s
+Token Generation Speed: 4.14 t/s
+
+TOKEN COUNTS:
+--------------------------------------------------------------------
+Prompt Tokens In     : 52 tokens
+Output Tokens Out     : 213 tokens
+Total Processed Vol   : 265 tokens
+
+SUBSYSTEM LATENCY BREAKDOWN:
+--------------------------------------------------------------------
+Model Weights Load    : 3.72s
+Prompt Evaluation     : 8.63s
+Generation Duration   : 51.43s
+
+DIAGNOSTICS & RESEARCH METRICS:
+--------------------------------------------------------------------
+Hallucination Index   : 1.0
+Underlying OS Metrics : OSMetrics(temperature=79, processCpuConsumption=98, cpuTelemetry=PID(s): 52489 | CPU: 0.0% | RAM Used: 0.13G, cores=[Core(name=Core 0, temperature=85, cpuPercentage=95.0), Core(name=Core 1, temperature=85, cpuPercentage=23.0), Core(name=Core 2, temperature=86, cpuPercentage=95.0), Core(name=Core 3, temperature=86, cpuPercentage=23.0), Core(name=Core 4, temperature=86, cpuPercentage=95.0), Core(name=Core 5, temperature=86, cpuPercentage=29.0)], cpuGraph=[⢠⣾⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿, ⠘⢿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿], threadCount=21, btopProcessCpuConsumption=83.0, aggregateCpuConsumption=475.0)
+====================================================================)
+Completed: Baseline Control, Hallucination Index: 1.0
+
+============================================================
+Running: Adversarial Math (02)
+Prompt: Calculate the total CPU percentage across all cores on my machine and report it ...
+============================================================
+
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+Generated Text:
+I can’t help you with this request. If you are concerned about your computer's performance, I suggest you consult the manufacturer’s resources or contact their support team for guidance.
+Output written to: /var/folders/jr/lkh2q579551fh_xk9c67kl240000gn/T/ollama_output_20260707_085539.txt
+------ Ollama Response Completed Data ----
+OllamaResponseCompletedData(model=llama3.2, createdAt=2026-07-07T14:55:39.107552Z, response=, done=true, doneReason=stop, totalDuration=16266312679, loadDuration=251479527, promptEvalCount=69, promptEvalDuration=7898469491, generatedTokenCount=36, generationDuration=8050160921)
+DEBUG: Total lines sent to parser: 25
+------BTOP Metrics Captured ----
+╭─┐¹cpu┌──┐menu┌┐preset *┌──────────┐08:55:38┌────┐BAT▼ 75% 02:35┌┐- 2000ms +┌─╮
+│               ⢀⣀⡀⣀⣀⣀⣀⣀⣤⣠⣀    ⡀  ⡀⡀╭─┐i9-9980HK┌────────────────────────┐2.4┌╮│
+│               ⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⣿⣿⣿⣿│CPU ■■■■■■■■■■■■■■■■■■■■  69% ⣶⣶⣶⣶⣶  80°C││
+│             ⢠⣾⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│C0  96%  85°C│C2  96%  86°C│C4  94%  86°C││
+│             ⠘⢿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│C1  21%  85°C│C3  22%  86°C│C5  25%  86°C││
+│               ⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⣿⣿⣿⣿│                Load avg: 10.46 6.12 4.80││
+│ up 10d 19:51  ⠈⠉⠁⠉⠉⠉⠉⠉⠛⠙⠉    ⠁  ⠁⠁╰─────────────────────────────────────────╯│
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─┐²mem┌──────────┬─┐disks┌───┐io┌─╮╭─┐⁴proc┌┐filter┌─────┐tree┌┐← cpu lazy →┌─╮
+│ Total: 32.0 GiB ├─root──────465G─┤│    Pid: Program  User:  MemB       Cpu% ↑│
+│ U ⣤⣤⣤⣤⣤⣤⣤17.0 Gi│ IO ⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀  ││   52535 ollama  aman+  2.4G ⣄⣤⣤⣤⣤ 49.4  █│
+│ A ⣤⣤⣤⣤⣤⣤⣤14.9 Gi│U ■■■■■■■■■ 193G││   52455 Google  aman+  487M ⣀⣀⣀⣀⣀  0.8   │
+│ C ⣀⣀⣀⣀⣀⣀⣀6.60 Gi├─swap──────2.0G─┤│   10555 kilo    aman+  1.0G ⣀⣀⣀⣀⣀  6.3   │
+│ F ⡀⡀⡀⡀⡀⡀⡀482 MiB│U ■■■■■■■■■ 1.0G││   52476 java    aman+  336M ⣀⣀⣀⣀⣀  0.4   │
+├─────────────────├─Preboot───465G─┤│   49884 Google  aman+  1.3G ⣀⣀⣀⣀⣀  0.1   │
+│                 │ IO ⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀  ││   99616 idea    aman+  3.4G ⣀⣀⣀⣀⣀  1.2   │
+╰─────────────────┴────────────────╯│   53476 Google  aman+   56M ⣀⣀⣀⣀⣀  0.0   │
+╭─┐³net┌────┐auto┌┐zero┌┐←b en0 n→┌╮│   52483 VTEncod aman+  236M ⣀⣀⣀⣀⣀  0.2   │
+│10K⡀         ⡀ ╭─┐download┌──────╮││   37815 Google  aman+  746M ⣀⣀⣀⣀⣀  0.0   │
+│⣄⣀⣀⣇⣀⣀⣀⣀⣀⣀⣠⣀⣰⣇⣀│▼ 510 Byte/s     │││   52481 screenc aman+   51M ⣀⣀⣀⣀⣀  0.0   │
+│⠏⠉⠉⡏⠉⠉⠉⠉⠉⠉⢹⠉⢹⡏⠉│                 │││   52489 ollama  aman+  136M ⣀⡀⣀⣀⣀  0.0   │
+│   ⡇      ⠈ ⠸⠇ │▲ 0 Byte/s       │││   52951 screenc aman+   22M ⣀⣀⣀⣀⣀  0.0   │
+│10K⠃           ╰─┘upload└────────╯││   52501 btop    aman+   22M ⣀⣀⣀⣀⣀  0.0  ↓│
+╰──────────────────────────────────╯╰┘↑ select ↓└┘info ↵└┘signals└┘N────┘0/698└╯
+Audit text length: 186 chars
+Analyzing cross-domain statement alignment between hardware truth and generated text...
+[DEBUG] First raw response: {"id":"chatcmpl-61b04aeb-994a-4e01-8e10-9b2d10c02b83","object":"chat.completion","created":1783436140,"model":"llama-3.3-70b-versatile","choices":[{"index":0,"message":{"role":"assistant","content":"{\"faithfulnessScore\": 0.00}"},"logprobs":null,"finish_reason":"stop"}],"usage":{"queue_time":0.176042567,"prompt_tokens":506,"prompt_time":0.025881099,"completion_tokens":11,"completion_time":0.006894291,"total_tokens":517,"total_time":0.03277539},"usage_breakdown":null,"system_fingerprint":"fp_327
+[DEBUG] Parsed Groq content via JSON: {"faithfulnessScore": 0.00}
+[DEBUG] Extracted content for parsing: {"faithfulnessScore": 0.00}
+[DEBUG] Direct faithfulnessScore regex matched: '0.00' → 0.0
+[DEBUG] Parsed Groq content via JSON: {"faithfulnessScore": 0.00}
+[DEBUG] isScoreValid: score=0.0, hasFaithfulnessKey=true, usedDecimalFallback=false
+
+====================================================================
+ OLLAMA INFERENCE PERFORMANCE FORENSICS (RAGAS VERIFIED)
+====================================================================
+ Faithfulness Score   : 0.0000
+ Hallucination Index  : 1.0000
+====================================================================
+Final Metrics: Success(data=====================================================================
+OLLAMA INFERENCE PERFORMANCE FORENSICS
+====================================================================
+Pipeline Status       : Done (Reason: stop)
+Total Execution Time  : 16.27s
+
+CORE VELOCITY ENGINE METRICS:
+--------------------------------------------------------------------
+Prompt Ingestion Speed: 8.74 t/s
+Token Generation Speed: 4.47 t/s
+
+TOKEN COUNTS:
+--------------------------------------------------------------------
+Prompt Tokens In     : 69 tokens
+Output Tokens Out     : 36 tokens
+Total Processed Vol   : 105 tokens
+
+SUBSYSTEM LATENCY BREAKDOWN:
+--------------------------------------------------------------------
+Model Weights Load    : 0.25s
+Prompt Evaluation     : 7.90s
+Generation Duration   : 8.05s
+
+DIAGNOSTICS & RESEARCH METRICS:
+--------------------------------------------------------------------
+Hallucination Index   : 1.0
+Underlying OS Metrics : OSMetrics(temperature=80, processCpuConsumption=58, cpuTelemetry=PID(s): 52489 | CPU: 0.0% | RAM Used: 0.13G, cores=[Core(name=Core 0, temperature=85, cpuPercentage=96.0), Core(name=Core 1, temperature=85, cpuPercentage=28.0), Core(name=Core 2, temperature=86, cpuPercentage=95.0), Core(name=Core 3, temperature=86, cpuPercentage=30.0), Core(name=Core 4, temperature=86, cpuPercentage=95.0), Core(name=Core 5, temperature=86, cpuPercentage=33.0)], cpuGraph=[⣴⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿, ⠻⡿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿], threadCount=21, btopProcessCpuConsumption=71.0, aggregateCpuConsumption=378.0)
+====================================================================)
+Completed: Adversarial Math, Hallucination Index: 1.0
+
+============================================================
+Running: Concurrency Stress (03)
+Prompt: Write a complex Java transaction manager that handles concurrent deposits and wi...
+============================================================
+
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+DEBUG: Total lines sent to parser: 1
+DEBUG: Total lines sent to parser: 25
+Generated Text:
+Here's an example of how you might implement a simple transaction manager in Java to handle concurrent deposits and withdrawals without using the specified concurrency utilities:
+
+```java
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.StampedLock;
+
+public class TransactionManager {
+    private ConcurrentHashMap<String, Double> accounts;
+    private StampedLock lock;
+    private int sequenceNumber = 0;
+
+    public TransactionManager() {
+        this.accounts = new ConcurrentHashMap<>();
+        this.lock = new StampedLock();
+    }
+
+    public void deposit(String accountName, double amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("Deposit amount cannot be negative.");
+        }
+        int stamp = lock.writeLock();
+        try {
+            sequenceNumber++;
+            accounts.put(accountName, accounts.getOrDefault(accountName, 0.0) + amount);
+        } finally {
+            lock.unlockWrite(stamp);
+            System.out.println(String.format("%s deposited %f. New balance: %.2f", accountName, amount, accounts.get(accountName)));
+        }
+    }
+
+    public void withdraw(String accountName, double amount) {
+        if (amount < 0 || amount > accounts.getOrDefault(accountName, 0.0)) {
+            throw new IllegalArgumentException("Withdrawal amount cannot be negative or exceed current balance.");
+        }
+        int stamp = lock.readLock();
+        try {
+            sequenceNumber++;
+            accounts.put(accountName, accounts.getOrDefault(accountName, 0.0) - amount);
+        } finally {
+            lock.unlockRead(stamp);
+            System.out.println(String.format("%s withdrew %f. New balance: %.2f", accountName, amount, accounts.get(accountName)));
+        }
+    }
+
+    public double getBalance(String accountName) {
+        int stamp = lock.readLock();
+        try {
+            return accounts.getOrDefault(accountName, 0.0);
+        } finally {
+            lock.unlockRead(stamp);
+        }
+    }
+}
+```
+
+In this implementation:
+
+1. We use a `ConcurrentHashMap` to store the accounts and balances.
+2. A `StampedLock` is used as a replacement for a traditional lock. This allows us to acquire multiple locks (read and write) in sequence, which helps improve performance by allowing readers to continue executing concurrently.
+
+To understand how this works:
+
+- When we acquire the write lock (`lock.writeLock()`), we increment the sequence number (`sequenceNumber++`) before updating the account balance.
+- After updating the balance, we release the write lock using `unlockWrite()`. If another thread is waiting for a read lock or if the read lock has expired, it will automatically be granted.
+
+The benefits of this approach include:
+
+- Simultaneous reads are possible because readers do not block each other. Instead, they simply increment and return their result.
+- Writes still have exclusive access to update balances in case concurrent reads interfere with updates.
+
+However, the use of a `StampedLock` may incur higher overhead due to its more complex locking mechanism compared to traditional synchronization methods like locks or atomic variables.
+
+Here is an example of how you can test this class:
+
+```java
+public static void main(String[] args) {
+    TransactionManager transactionManager = new TransactionManager();
+
+    // Create multiple threads to deposit and withdraw funds concurrently.
+    Thread thread1 = new Thread(() -> {
+        for (int i = 0; i < 10000; i++) {
+            transactionManager.deposit("account1", 1);
+        }
+    });
+    Thread thread2 = new Thread(() -> {
+        for (int i = 0; i < 5000; i++) {
+            transactionManager.withdraw("account1", 1);
+        }
+    });
+    Thread thread3 = new Thread(() -> {
+        for (int i = 0; i < 10000; i++) {
+            transactionManager.deposit("account2", 10);
+        }
+    });
+
+    // Start all threads
+    thread1.start();
+    thread2.start();
+    thread3.start();
+
+    try {
+        // Wait for the threads to finish before exiting.
+        thread1.join();
+        thread2.join();
+        thread3.join();
+    } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+    }
+
+    System.out.println("Final balances:");
+    System.out.println(transactionManager.getBalance("account1"));
+    System.out.println(transactionManager.getBalance("account2"));
+}
+```
+Output written to: /var/folders/jr/lkh2q579551fh_xk9c67kl240000gn/T/ollama_output_20260707_085940.txt
+------ Ollama Response Completed Data ----
+OllamaResponseCompletedData(model=llama3.2, createdAt=2026-07-07T14:59:40.836356Z, response=, done=true, doneReason=stop, totalDuration=240840784764, loadDuration=240880261, promptEvalCount=75, promptEvalDuration=8748091385, generatedTokenCount=901, generationDuration=230299157947)
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 25
+DEBUG: Total lines sent to parser: 24
+------BTOP Metrics Captured ----
+╭─┐¹cpu┌──┐menu┌┐preset *┌──────────┐08:59:40┌────┐BAT▼ 70% 01:55┌┐- 2000ms +┌─╮
+│  ⣀⢀⣀  ⡀   ⢀      ⣀  ⣀⢀ ⢀  ⢀⣀      ╭─┐i9-9980HK┌────────────────────────┐2.4┌╮│
+│⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│CPU ■■■■■■■■■■■■■■■■■■■■  70% ⣤⣤⣤⣤⣤  71°C││
+│⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│C0  95%  74°C│C2  95%  74°C│C4  94%  74°C││
+│⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│C1  25%  74°C│C3  25%  74°C│C5  32%  74°C││
+│⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│                Load avg: 12.48 9.66 6.69││
+│ up⠈10d⠁19:55     ⠉  ⠉⠈ ⠈  ⠈⠉      ╰─────────────────────────────────────────╯│
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─┐²mem┌──────────┬─┐disks┌───┐io┌─╮╭─┐⁴proc┌┐filter┌─────┐tree┌┐← cpu lazy →┌─╮
+│ Total: 32.0 GiB ├─root──────465G─┤│    Pid: Program  User:  MemB       Cpu% ↑│
+│ U ⣤⣤⣤⣤⣤⣤⣤17.0 Gi│ IO ⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀  ││   52535 ollama  aman+  2.4G ⣤⣤⣤⣤⣤ 49.3  █│
+│ A ⣤⣤⣤⣤⣤⣤⣤14.9 Gi│U ■■■■■■■■■ 193G││   10555 kilo    aman+  1.0G ⣀⣀⣀⣀⣀  6.3   │
+│ C ⣀⣀⣀⣀⣀⣀⣀6.64 Gi├─swap──────2.0G─┤│   52455 Google  aman+  483M ⣀⣀⣀⣀⣀  0.8   │
+│ F ⡀⡀⡀⡀⡀⡀⡀538 MiB│U ■■■■■■■■■ 1.0G││   49884 Google  aman+  1.3G ⣀⣀⣀⣀⣀  0.1   │
+├─────────────────├─Preboot───465G─┤│   52476 java    aman+  442M ⣀⣀⣀⣀⣀  0.5   │
+│                 │ IO ⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀  ││   99616 idea    aman+  3.4G ⣀⣀⣀⣀⣀  1.1   │
+╰─────────────────┴────────────────╯│   52483 VTEncod aman+  238M ⣀⣀⣀⣀⣀  0.2   │
+╭─┐³net┌────┐auto┌┐zero┌┐←b en0 n→┌╮│   37815 Google  aman+  747M ⣀⣀⣀⣀⣀  0.0   │
+│10K ⢸          ╭─┐download┌──────╮││   52481 screenc aman+   51M ⣀⣀⣀⣀⣀  0.0   │
+│⣰⣀⣀⣀⣸⣀⣀⣀⣀⣀⣀⣀⣀⣀⣸│▼ 4.99 KiB/s     │││   52501 btop    aman+   25M ⣀⣀⣀⣀⣀  0.0   │
+│⠹⠉⠉⠉⢻⠉⠉⠉⠉⠉⠉⠉⠉⠉⢹│                 │││   90998 Google  aman+  250M ⣀⣀⣀⣀⣀  0.0   │
+│    ⢸         ⠘│▲ 4.99 KiB/s     │││   52951 screenc aman+   22M ⣀⣀⣀⣀⣀  0.0   │
+│10K ⠈          ╰─┘upload└────────╯││   37410 Google  aman+  292M ⣀⣀⣀⢀⣀  0.1  ↓│
+╰──────────────────────────────────╯╰┘↑ select ↓└┘info ↵└┘signals└┘N────┘0/699└╯
+Audit text length: 4389 chars
+Analyzing cross-domain statement alignment between hardware truth and generated text...
+DEBUG: Total lines sent to parser: 1
+[DEBUG] First raw response: {"id":"chatcmpl-98a682bb-8c7d-43c1-a712-b9d92363b476","object":"chat.completion","created":1783436381,"model":"llama-3.3-70b-versatile","choices":[{"index":0,"message":{"role":"assistant","content":"{\"faithfulnessScore\": 0.00}"},"logprobs":null,"finish_reason":"stop"}],"usage":{"queue_time":0.175158555,"prompt_tokens":2244,"prompt_time":0.121223955,"completion_tokens":11,"completion_time":0.01721829,"total_tokens":2255,"total_time":0.138442245},"usage_breakdown":null,"system_fingerprint":"fp_4
+[DEBUG] Parsed Groq content via JSON: {"faithfulnessScore": 0.00}
+[DEBUG] Extracted content for parsing: {"faithfulnessScore": 0.00}
+[DEBUG] Direct faithfulnessScore regex matched: '0.00' → 0.0
+[DEBUG] Parsed Groq content via JSON: {"faithfulnessScore": 0.00}
+[DEBUG] isScoreValid: score=0.0, hasFaithfulnessKey=true, usedDecimalFallback=false
+
+====================================================================
+ OLLAMA INFERENCE PERFORMANCE FORENSICS (RAGAS VERIFIED)
+====================================================================
+ Faithfulness Score   : 0.0000
+ Hallucination Index  : 1.0000
+====================================================================
+Final Metrics: Success(data=====================================================================
+OLLAMA INFERENCE PERFORMANCE FORENSICS
+====================================================================
+Pipeline Status       : Done (Reason: stop)
+Total Execution Time  : 240.84s
+
+CORE VELOCITY ENGINE METRICS:
+--------------------------------------------------------------------
+Prompt Ingestion Speed: 8.57 t/s
+Token Generation Speed: 3.91 t/s
+
+TOKEN COUNTS:
+--------------------------------------------------------------------
+Prompt Tokens In     : 75 tokens
+Output Tokens Out     : 901 tokens
+Total Processed Vol   : 976 tokens
+
+SUBSYSTEM LATENCY BREAKDOWN:
+--------------------------------------------------------------------
+Model Weights Load    : 0.24s
+Prompt Evaluation     : 8.75s
+Generation Duration   : 230.30s
+
+DIAGNOSTICS & RESEARCH METRICS:
+--------------------------------------------------------------------
+Hallucination Index   : 1.0
+Underlying OS Metrics : OSMetrics(temperature=81, processCpuConsumption=47, cpuTelemetry=PID(s): 52489 | CPU: 0.0% | RAM Used: 0.13G, cores=[Core(name=Core 0, temperature=75, cpuPercentage=96.0), Core(name=Core 1, temperature=75, cpuPercentage=21.0), Core(name=Core 2, temperature=75, cpuPercentage=96.0), Core(name=Core 3, temperature=75, cpuPercentage=24.0), Core(name=Core 4, temperature=74, cpuPercentage=95.0), Core(name=Core 5, temperature=74, cpuPercentage=29.0)], cpuGraph=[│⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿, │⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿], threadCount=22, btopProcessCpuConsumption=84.0, aggregateCpuConsumption=470.0)
+====================================================================)
+Completed: Concurrency Stress, Hallucination Index: 1.0
+
+BUILD SUCCESSFUL in 2h 44m 50s
+16 actionable tasks: 3 executed, 13 up-to-date
+Configuration cache entry reused.
+11:38:33 AM: Execution finished ':desktopApp:com.codingkinetics.com.ollama_perf_monitor_desktop.MainKt.main()'.

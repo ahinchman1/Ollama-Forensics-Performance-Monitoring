@@ -1,6 +1,7 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics
 
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OSMetrics
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuTimeSeriesSnapshot
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
 
@@ -13,5 +14,8 @@ interface MetricsCollector {
 
     fun getPeakMetricsCollected(): OSMetrics
 
+    fun getCpuTimeSeriesSnapshots(): List<CpuTimeSeriesSnapshot>
+
     fun resetPeakMetrics()
+    fun resetTimeSeriesSnapshots()
 }

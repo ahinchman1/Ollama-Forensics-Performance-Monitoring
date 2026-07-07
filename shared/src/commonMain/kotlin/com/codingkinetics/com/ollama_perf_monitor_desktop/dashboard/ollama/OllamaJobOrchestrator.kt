@@ -6,11 +6,13 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.RagasE
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.MetricsCollector
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OSMetrics
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaJobResult
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuTimeSeriesSnapshot
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.ScenarioTimeSeries
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.TokenTimeSeriesSnapshot
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
-
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.flatMap
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.runCommandIgnoringErrors
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxExecutable
@@ -20,6 +22,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class OllamaJobOrchestrator(
     private val jobRunner: OllamaJobRunner,
@@ -51,9 +54,10 @@ class OllamaJobOrchestrator(
         model: String,
         prompt: String,
         onChunk: (String) -> Unit,
+        onTokenProgress: (promptEvalCount: Long, evalCount: Long) -> Unit = { _, _ -> },
     ): Result<PerformanceMetrics> {
         startMetricsSampling()
-        return when (val ollamaData = jobRunner.runOllamaEssayJob(model, prompt, onChunk, coroutineContextProvider)) {
+        return when (val ollamaData = jobRunner.runOllamaEssayJob(model, prompt, onChunk, onTokenProgress)) {
             is Result.Success -> {
                 val peakMetrics = metricsCollector.getPeakMetricsCollected()
                 stopMetricsSampling()
@@ -78,15 +82,15 @@ class OllamaJobOrchestrator(
             jobResult.generatedText,
             peakMetrics,
         ).flatMap { evalData ->
-            getPerformanceData(prompt, jobResult, evalData)
+            getPerformanceData(prompt, jobResult, evalData, peakMetrics)
         }
 
     private fun getPerformanceData(
         prompt: String,
         jobResult: OllamaJobResult,
         ragasEvaluation: EvaluationResult,
+        peakMetrics: OSMetrics,
     ): Result<PerformanceMetrics> {
-        val peakMetrics = metricsCollector.getPeakMetricsCollected()
         val finalMetrics = mapOllamaResponseToDomain(
             prompt = prompt,
             ollamaJobResult = jobResult,
@@ -94,7 +98,6 @@ class OllamaJobOrchestrator(
             ragasEvaluation
         )
 
-        metricsCollector.stopMetricsDashboard()
         println("Final Metrics: $finalMetrics")
         return finalMetrics
     }
@@ -119,6 +122,7 @@ class OllamaJobOrchestrator(
         metricsSamplingJob = samplingScope.launch {
             while (isActive) {
                 metricsCollector.parseBtopData()
+                kotlinx.coroutines.delay(1_000.milliseconds)
             }
         }
     }
@@ -139,5 +143,13 @@ class OllamaJobOrchestrator(
         stopMetricsSampling()
         metricsCollector.stopMetricsDashboard()
         jobRunner.cleanupRuntimeResources()
+    }
+
+    internal fun getCpuTimeSeriesSnapshots(): List<CpuTimeSeriesSnapshot> {
+        return metricsCollector.getCpuTimeSeriesSnapshots()
+    }
+
+    internal fun resetTimeSeriesSnapshots() {
+        metricsCollector.resetTimeSeriesSnapshots()
     }
 }
