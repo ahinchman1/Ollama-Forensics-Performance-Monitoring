@@ -6,6 +6,7 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextP
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.ForensicsEvaluator
 import com.codingkinetics.com.ollama_perf_monitor_desktop.benchmarking.ForensicsBenchmarkSuite
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
 import kotlinx.coroutines.CoroutineScope
@@ -103,10 +104,18 @@ class DashboardViewModel(
             is Result.Failure -> withContext(contextPool.mainDispatcher) {
                 val e = performanceMetrics.exception
                 println("Unable to get performance data. Cause: ${e.message}")
+                val rateLimitEx = e as? ForensicsEvaluator.GroqRateLimitException
                 _viewState.update {
-                    DashboardViewState.PipelineFailure.ExecutionError(
-                        errorMessage = performanceMetrics.exception.message ?: "Unknown error",
-                    )
+                    if (rateLimitEx != null) {
+                        DashboardViewState.PipelineFailure.RateLimited(
+                            errorMessage = rateLimitEx.message ?: "Rate limited by Groq API",
+                            retryAfterSeconds = rateLimitEx.retryAfterSeconds,
+                        )
+                    } else {
+                        DashboardViewState.PipelineFailure.ExecutionError(
+                            errorMessage = e.message ?: "Unknown error",
+                        )
+                    }
                 }
             }
         }
@@ -188,9 +197,17 @@ class DashboardViewModel(
                 }
             } catch (e: Exception) {
                 withContext(contextPool.mainDispatcher) {
-                    _viewState.value = DashboardViewState.PipelineFailure.ExecutionError(
-                        errorMessage = "Benchmark failed: ${e.message}",
-                    )
+                    val rateLimitEx = e as? ForensicsEvaluator.GroqRateLimitException
+                    _viewState.value = if (rateLimitEx != null) {
+                        DashboardViewState.PipelineFailure.RateLimited(
+                            errorMessage = rateLimitEx.message ?: "Rate limited by Groq API",
+                            retryAfterSeconds = rateLimitEx.retryAfterSeconds,
+                        )
+                    } else {
+                        DashboardViewState.PipelineFailure.ExecutionError(
+                            errorMessage = "Benchmark failed: ${e.message}",
+                        )
+                    }
                 }
             }
         }

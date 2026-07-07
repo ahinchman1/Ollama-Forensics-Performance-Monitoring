@@ -38,7 +38,10 @@ fun DashboardView(viewModel: DashboardViewModel) {
     val currentStatusMessage = when (val state = uiState) {
         is DashboardViewState.Idle -> "System Ready. Infrastructure offline."
         is DashboardViewState.ActiveJob -> state.statusMessage
-        is DashboardViewState.PipelineFailure -> "FAILURE: ${state.errorMessage}"
+        is DashboardViewState.PipelineFailure -> when (state) {
+            is DashboardViewState.PipelineFailure.RateLimited -> "RATE LIMITED: ${state.errorMessage}"
+            else -> "FAILURE: ${state.errorMessage}"
+        }
         is DashboardViewState.CompletedJob -> state.statusMessage
         is DashboardViewState.BenchmarkResults -> "Benchmark Complete"
     }
@@ -90,6 +93,36 @@ fun DashboardView(viewModel: DashboardViewModel) {
         if (uiState is DashboardViewState.BenchmarkResults) {
             BenchmarkReportView((uiState as DashboardViewState.BenchmarkResults).report)
         } else {
+            if (uiState is DashboardViewState.PipelineFailure.RateLimited) {
+                val rateLimitState = uiState as DashboardViewState.PipelineFailure.RateLimited
+                androidx.compose.material3.Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = androidx.compose.material3.CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "⚠️ Groq API Rate Limited",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = rateLimitState.errorMessage,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Retry after: ${rateLimitState.retryAfterSeconds}s | The benchmark will not count results until this resets.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
             Text(text = "Research Monitor:", style = MaterialTheme.typography.labelMedium)
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = currentStatusMessage, style = MaterialTheme.typography.bodyMedium)

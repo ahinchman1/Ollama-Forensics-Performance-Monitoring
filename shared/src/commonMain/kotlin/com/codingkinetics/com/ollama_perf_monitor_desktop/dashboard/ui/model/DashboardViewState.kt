@@ -29,6 +29,12 @@ sealed interface DashboardViewState {
             override val errorMessage: String,
             override val installHint: String = ""
         ) : PipelineFailure
+
+        data class RateLimited(
+            override val errorMessage: String,
+            override val installHint: String = "Wait for the rate limit to reset before retrying.",
+            val retryAfterSeconds: String = "60",
+        ) : PipelineFailure
     }
 
     data class CompletedJob(

@@ -14,6 +14,11 @@ class ForensicsEvaluator(private val client: HttpClient) {
     private val apiKey = System.getenv("GROQ_API_KEY") ?: ""
     private val json = Json { ignoreUnknownKeys = true }
 
+    class GroqRateLimitException(
+        message: String,
+        val retryAfterSeconds: String = "60"
+    ) : IllegalStateException(message)
+
     suspend fun evaluateFaithfulness(
         prompt: String,
         context: String,
@@ -85,6 +90,12 @@ class ForensicsEvaluator(private val client: HttpClient) {
             val errorBody = httpResponse.bodyAsText()
             val message = runCatching { httpResponse.body<GroqError>() }.getOrNull()?.error?.message
                 ?: errorBody.take(200)
+            
+            if (httpResponse.status == HttpStatusCode.TooManyRequests) {
+                val retryAfter = httpResponse.headers["Retry-After"] ?: "60"
+                throw GroqRateLimitException("Groq rate limited. Retry after $retryAfter seconds.", retryAfter)
+            }
+            
             throw Exception("Groq API error ${httpResponse.status}: $message")
         }
 
