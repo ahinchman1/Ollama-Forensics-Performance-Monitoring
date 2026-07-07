@@ -107,12 +107,12 @@ data class BenchmarkSuiteReport(
         appendLine("- Active Core Thermal Delta   : $coreDelta")
         appendLine()
 
-        appendLine("## 🧵 Thread Concurrency Profile")
+        appendLine("## Thread Concurrency Profile")
         appendLine("- Peak Thread Count           : $peakThreadCount")
         appendLine("- Thread Spike Detected       : ${if (threadSpikeDetected) "YES ($threadSpikeSeverity)" else "No"}")
         appendLine()
 
-        appendLine("## 📋 Detailed Scenario Results")
+        appendLine("## Detailed Scenario Results")
         results.forEach { result ->
             appendLine("### ${result.scenarioLabel}")
             appendLine("- Prompt Tokens: ${result.promptTokens}")

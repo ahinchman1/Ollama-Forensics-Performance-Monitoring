@@ -103,7 +103,7 @@ fun DashboardView(viewModel: DashboardViewModel) {
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "⚠️ Groq API Rate Limited",
+                            text = "Groq API Rate Limited",
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.error
                         )
