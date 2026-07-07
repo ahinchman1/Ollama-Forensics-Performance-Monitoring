@@ -1,0 +1,183 @@
+@startuml Ollama Forensics Performance Monitor - UML
+
+!theme plain
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+skinparam backgroundColor #FAFAFA
+skinparam handwritten false
+
+' ============================================================
+' PACKAGES
+' ============================================================
+
+package "desktopApp\n(jvmMain)" {
+    class main
+    class BtopMetricsCollector
+    class OllamaJobRunnerDesktop
+    class ForensicsEvaluator
+    class RagasEngine
+    class ComposeContextContentProvider
+}
+
+package "shared\ncommonMain" {
+    package "dashboard.ollama" {
+        interface OllamaJobRunner
+        class OllamaJobOrchestrator
+    }
+
+    package "dashboard.metrics" {
+        interface MetricsCollector
+    }
+
+    package "dashboard.ragas" {
+        class RagasEngine
+        class ForensicsEvaluator
+        interface ContextContentProvider
+        class ComposeContextContentProvider
+        class GroqMessage
+        class GroqRequest
+        class GroqError
+        class GroqErrorDetail
+        class EvaluationResult
+        class GroqResponse
+        class Choice
+    }
+
+    package "dashboard.model" {
+        class PerformanceMetrics
+        class OllamaJobResult
+        class OSMetrics
+        class Core
+        class OllamaStreamChunk
+        class OllamaResponseCompletedData
+        class CpuSnapshotData
+    }
+
+    package "dashboard.mapper" {
+        class mapOllamaResponseToDomain
+    }
+
+    package "dashboard.formatter" {
+        class PerformanceMetricsFormatter
+    }
+
+    package "dashboard.ui" {
+        class DashboardView
+        class DashboardViewModel
+        interface DashboardViewState
+        class Panels
+        class ContextContentProvider
+    }
+
+    package "benchmarking" {
+        interface BenchmarkRunner
+        class ForensicsBenchmarkSuite
+        class BenchmarkReportView
+        class BenchmarkScenarioResult
+        class BenchmarkSuiteReport
+        class BenchmarkScenario
+    }
+
+    package "util" {
+        interface Result
+        class CoroutineContextProvider
+        class CoroutineContextProviderImpl
+    }
+}
+
+package "shared\njvmMain" {
+    class Platform.jvm.kt
+}
+
+' ============================================================
+' INTERFACE IMPLEMENTATIONS
+' ============================================================
+
+OllamaJobRunnerDesktop ..|> OllamaJobRunner
+BtopMetricsCollector ..|> MetricsCollector
+ComposeContextContentProvider ..|> ContextContentProvider
+CoroutineContextProviderImpl ..|> CoroutineContextProvider
+
+' ============================================================
+' COMPOSITION / DEPENDENCY INJECTION
+' ============================================================
+
+main --> OllamaJobOrchestrator : creates
+main --> OllamaJobRunnerDesktop : creates
+main --> BtopMetricsCollector : creates
+main --> RagasEngine : creates
+main --> ForensicsEvaluator : creates
+main --> ComposeContextContentProvider : creates
+
+main ..> App : invokes
+
+App --> DashboardViewModel : creates
+App --> DashboardView : invokes
+
+DashboardViewModel --> OllamaJobOrchestrator : depends on
+DashboardViewModel --> PerformanceMetricsFormatter : depends on
+DashboardViewModel --> ForensicsBenchmarkSuite : creates
+DashboardViewModel --> CoroutineContextProviderImpl : depends on
+
+DashboardView --> DashboardViewModel : observes
+DashboardView --> BenchmarkReportView : renders when benchmark
+DashboardView --> Panels : renders
+
+OllamaJobOrchestrator --> OllamaJobRunner : depends on
+OllamaJobOrchestrator --> MetricsCollector : depends on
+OllamaJobOrchestrator --> RagasEngine : depends on
+OllamaJobOrchestrator --> CoroutineContextProviderImpl : depends on
+
+RagasEngine --> ForensicsEvaluator : depends on
+RagasEngine --> ContextContentProvider : depends on
+
+ForensicsEvaluator --> GroqMessage : uses
+ForensicsEvaluator --> GroqRequest : uses
+ForensicsEvaluator --> EvaluationResult : returns
+
+ForensicsBenchmarkSuite --> OllamaJobOrchestrator : depends on
+ForensicsBenchmarkSuite --> BenchmarkScenarioResult : creates
+ForensicsBenchmarkSuite --> BenchmarkSuiteReport : creates
+
+BenchmarkReportView --> BenchmarkSuiteReport : renders
+
+PerformanceMetricsFormatter --> PerformanceMetrics : formats
+
+' ============================================================
+' DATA FLOW - RESULT CHAIN
+' ============================================================
+
+OllamaJobRunnerDesktop ..> OllamaJobResult : returns
+OllamaJobRunnerDesktop ..> OllamaStreamChunk : streams
+OllamaJobRunnerDesktop ..> OllamaResponseCompletedData : parses
+
+OllamaJobOrchestrator ..> PerformanceMetrics : maps to
+OllamaJobOrchestrator ..> OSMetrics : collects
+
+MetricsCollector ..> OSMetrics : returns
+BtopMetricsCollector ..> CpuSnapshotData : parses
+BtopMetricsCollector ..> Core : tracks
+
+mapOllamaResponseToDomain ..> PerformanceMetrics : creates
+mapOllamaResponseToDomain ..> EvaluationResult : combines
+
+' ============================================================
+' STATE MANAGEMENT
+' ============================================================
+
+DashboardViewState <|.. Idle
+DashboardViewState <|.. ActiveJob
+DashboardViewState <|.. CompletedJob
+DashboardViewState <|.. PipelineFailure
+PipelineFailure <|.. MissingDependency
+PipelineFailure <|.. ExecutionError
+BenchmarkResults ..> DashboardViewState : implements
+
+' ============================================================
+' UTILITIES
+' ============================================================
+
+Result <|.. Success
+Result <|.. Failure
+
+@enduml
