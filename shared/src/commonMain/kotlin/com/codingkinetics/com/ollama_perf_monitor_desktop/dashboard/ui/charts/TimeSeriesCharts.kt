@@ -3,12 +3,14 @@ package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.charts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import com.codingkinetics.com.ollama_perf_monitor_desktop.benchmarking.BenchmarkScenarioResult
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuTimeSeriesSnapshot
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.TokenTimeSeriesSnapshot
 
@@ -51,6 +54,62 @@ fun TokenExpenditureChart(
         valueLabel = "Tokens",
         modifier = modifier,
     )
+}
+
+@Composable
+fun TokenComparisonBarChart(
+    results: List<BenchmarkScenarioResult>,
+    modifier: Modifier = Modifier,
+) {
+    val maxTokens = results.maxOfOrNull { it.generatedTokens.toDouble() } ?: 1.0
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = "Token Expenditure by Scenario",
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                results.forEach { result ->
+                    Column(
+                        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(40.dp)
+                                .height((result.generatedTokens.toDouble() / maxTokens * 80).dp)
+                                .background(
+                                    when {
+                                        result.hallucinationIndex > 0.5 -> MaterialTheme.colorScheme.error
+                                        result.hallucinationIndex > 0.25 -> MaterialTheme.colorScheme.secondary
+                                        else -> MaterialTheme.colorScheme.tertiary
+                                    }
+                                )
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "${result.generatedTokens}",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Text(
+                            text = "Scenario ${result.scenarioId}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

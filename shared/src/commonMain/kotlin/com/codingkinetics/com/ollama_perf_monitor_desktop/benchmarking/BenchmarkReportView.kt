@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.charts.CpuTimeSeriesChart
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.charts.TokenExpenditureChart
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.charts.TokenComparisonBarChart
 
 @Composable
 fun BenchmarkReportView(report: BenchmarkSuiteReport) {
@@ -23,9 +23,9 @@ fun BenchmarkReportView(report: BenchmarkSuiteReport) {
     ) {
         item {
             Text(
-                text = "📊 Ollama Forensics Performance Report",
+                text = "Ollama Forensics Performance Report",
                 style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
         }
@@ -38,9 +38,10 @@ fun BenchmarkReportView(report: BenchmarkSuiteReport) {
 
         item {
             Text(
-                text = "📈 Time-Series Forensics",
+                text = "Time-Series Forensics",
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+                color = MaterialTheme.colorScheme.onPrimary,
             )
         }
 
@@ -49,17 +50,29 @@ fun BenchmarkReportView(report: BenchmarkSuiteReport) {
                 Text(
                     text = "Scenario ${result.scenarioId}: ${result.scenarioName}",
                     style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(bottom = 4.dp)
+                    modifier = Modifier.padding(bottom = 4.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
                 )
                 CpuTimeSeriesChart(
                     snapshots = result.timeSeries.cpuSnapshots,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
-                TokenExpenditureChart(
-                    snapshots = result.timeSeries.tokenSnapshots,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
             }
+        }
+
+        item {
+            Text(
+                text = "Token Expenditure by Scenario",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
+
+        item {
+            TokenComparisonBarChart(
+                results = report.results,
+            )
         }
     }
 }
@@ -73,32 +86,43 @@ private fun PerformanceSummaryCard(report: BenchmarkSuiteReport) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "🏎️ Core Engine Velocity Baseline",
-                style = MaterialTheme.typography.titleMedium
+                text = "Core Engine Velocity Baseline",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimary,
             )
             Text("Avg Ingestion Speed: ${String.format("%.1f", report.averagePromptIngestionSpeed)} t/s")
             Text("Avg Generation Speed: ${String.format("%.2f", report.averageTokenGenerationSpeed)} t/s")
             Text("Mean Total Time: ${String.format("%.1f", report.meanTotalExecutionTime)}s")
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "🌡️ Hardware Strain Profile",
-                style = MaterialTheme.typography.titleMedium
+                text = "Hardware Strain Profile",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimary,
             )
             Text("Peak CPU (ps): ${report.peakCpuConsumption}%")
             Text("Peak CPU (btop): ${String.format("%.1f", report.peakBtopCpuConsumption)}%")
             Text("Peak Temp: ${report.peakTemperature}°C")
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "🧵 Thread Concurrency",
+                text = "Thread Concurrency",
                 style = MaterialTheme.typography.titleMedium
             )
             Text("Peak Threads: ${report.peakThreadCount}")
             if (report.threadSpikeDetected) {
+                val severityColor = when (report.threadSpikeSeverity) {
+                    "CRITICAL" -> MaterialTheme.colorScheme.error
+                    "WARNING" -> MaterialTheme.colorScheme.secondary
+                    else -> MaterialTheme.colorScheme.primary
+                }
                 Text(
-                        text = "⚠️ Thread Spike Detected",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    text = when (report.threadSpikeSeverity) {
+                        "CRITICAL" -> "CRITICAL Thread Spike: ${report.peakThreadCount} threads (expected < 100 for essay generation)"
+                        "WARNING" -> "Thread Spike: ${report.peakThreadCount} threads (expected < 50 for essay generation)"
+                        else -> "Thread Spike: ${report.peakThreadCount} threads"
+                    },
+                    color = severityColor,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
     }
@@ -123,7 +147,7 @@ private fun ScenarioResultCard(result: BenchmarkScenarioResult) {
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
-                text = "🔍 ${result.scenarioLabel}",
+                text = "${result.scenarioLabel}",
                 style = MaterialTheme.typography.titleSmall
             )
             Text("Hallucination: ${String.format("%.4f", result.hallucinationIndex)}")
@@ -132,7 +156,7 @@ private fun ScenarioResultCard(result: BenchmarkScenarioResult) {
             Text("Tokens: ${result.promptTokens} → ${result.generatedTokens}")
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "🌡️ OS Metrics",
+                text = "OS Metrics",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -112,6 +112,15 @@ class ForensicsBenchmarkSuite(
                 val response = result.data.output
                 onProgress("Response: ${response.take(500)}${if (response.length > 500) "..." else ""}")
                 val cpuSnapshots = orchestrator.getCpuTimeSeriesSnapshots()
+
+                tokenSnapshots.add(
+                    TokenTimeSeriesSnapshot(
+                        timestampMillis = System.currentTimeMillis(),
+                        cumulativePromptTokens = result.data.promptTokensCount,
+                        cumulativeGeneratedTokens = result.data.generatedTokensCount,
+                    )
+                )
+
                 toBenchmarkResult(result.data, scenario, cpuSnapshots, tokenSnapshots)
             }
             is Result.Failure -> {

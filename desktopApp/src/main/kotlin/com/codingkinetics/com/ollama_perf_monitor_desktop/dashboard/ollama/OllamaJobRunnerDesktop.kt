@@ -185,15 +185,13 @@ class OllamaJobRunnerDesktop(
                         output.append(chunk.response)
                     }
 
-                    if (chunk.evalCount > 0 || chunk.promptEvalCount > 0) {
-                        onTokenProgress(chunk.promptEvalCount, chunk.evalCount)
-                    }
-
                     if (chunk.done) {
                         val outputStr = output.toString()
                         val finalData = jsonWorker.decodeFromString<OllamaResponseCompletedData>(currentLine)
                         onAiJobComplete(outputStr, finalData)
                     }
+
+                    onTokenProgress(chunk.promptEvalCount, chunk.evalCount)
                 }.onFailure { e ->
                     println("Skipping malformed or incomplete JSON frame: $currentLine. Error: ${e.message}")
                 }

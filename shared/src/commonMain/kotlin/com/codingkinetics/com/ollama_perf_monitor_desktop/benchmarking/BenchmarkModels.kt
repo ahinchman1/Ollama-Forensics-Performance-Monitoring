@@ -63,11 +63,13 @@ data class BenchmarkSuiteReport(
         get() = results.maxOfOrNull { it.osMetrics.threadCount } ?: 0
 
     val threadSpikeDetected: Boolean
-        get() {
-            if (results.size < 2) return false
-            val minThreads = results.minOf { it.osMetrics.threadCount }
-            val maxThreads = results.maxOf { it.osMetrics.threadCount }
-            return minThreads > 0 && maxThreads > minThreads * 1_30 / 100
+        get() = peakThreadCount > 50
+
+    val threadSpikeSeverity: String
+        get() = when {
+            peakThreadCount > 100 -> "CRITICAL"
+            peakThreadCount > 50 -> "WARNING"
+            else -> "NORMAL"
         }
 
     fun toMarkdown(): String = buildString {
@@ -107,7 +109,7 @@ data class BenchmarkSuiteReport(
 
         appendLine("## 🧵 Thread Concurrency Profile")
         appendLine("- Peak Thread Count           : $peakThreadCount")
-        appendLine("- Thread Spike Detected       : ${if (threadSpikeDetected) "YES" else "No"}")
+        appendLine("- Thread Spike Detected       : ${if (threadSpikeDetected) "YES ($threadSpikeSeverity)" else "No"}")
         appendLine()
 
         appendLine("## 📋 Detailed Scenario Results")
