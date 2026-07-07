@@ -104,6 +104,7 @@ class OllamaJobRunnerDesktop(
         model: String,
         prompt: String,
         onChunk: (String) -> Unit,
+        onTokenProgress: (promptEvalCount: Long, evalCount: Long) -> Unit,
     ): Result<OllamaJobResult> {
         var connection: HttpURLConnection? = null
         return try {
@@ -136,9 +137,14 @@ class OllamaJobRunnerDesktop(
 
                 var finalResultData: OllamaJobResult? = null
 
-                streamRawJsonChunks(connection, onChunk) { output, completedData ->
-                    finalResultData = OllamaJobResult(generatedText = output, completedData = completedData)
-                }
+                streamRawJsonChunks(
+                    connection,
+                    onChunk,
+                    { output, completedData ->
+                        finalResultData = OllamaJobResult(generatedText = output, completedData = completedData)
+                    },
+                    onTokenProgress,
+                )
 
                 finalResultData?.let { result ->
                     println("Generated Text:\n${result.generatedText}")
@@ -163,6 +169,7 @@ class OllamaJobRunnerDesktop(
         connection: HttpURLConnection,
         onChunk: (String) -> Unit,
         onAiJobComplete: (String, OllamaResponseCompletedData) -> Unit,
+        onTokenProgress: (promptEvalCount: Long, evalCount: Long) -> Unit,
     ) {
         val output = StringBuilder()
         connection.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
@@ -176,6 +183,10 @@ class OllamaJobRunnerDesktop(
                     if (chunk.response.isNotEmpty()) {
                         onChunk(chunk.response)
                         output.append(chunk.response)
+                    }
+
+                    if (chunk.evalCount > 0 || chunk.promptEvalCount > 0) {
+                        onTokenProgress(chunk.promptEvalCount, chunk.evalCount)
                     }
 
                     if (chunk.done) {

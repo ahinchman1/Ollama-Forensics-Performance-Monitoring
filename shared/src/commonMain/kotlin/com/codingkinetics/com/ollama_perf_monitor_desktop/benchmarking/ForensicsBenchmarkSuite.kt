@@ -2,6 +2,10 @@ package com.codingkinetics.com.ollama_perf_monitor_desktop.benchmarking
 
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollama.OllamaJobOrchestrator
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OSMetrics
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuTimeSeriesSnapshot
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.TokenTimeSeriesSnapshot
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.ScenarioTimeSeries
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -85,13 +89,30 @@ class ForensicsBenchmarkSuite(
         onProgress("--- Scenario: ${scenario.name} ---")
         onProgress("Prompt: ${scenario.prompt}")
 
-        return when (val result = orchestrator.runOllamaEssayJob(model, scenario.prompt) { chunk ->
-            onChunk(chunk)
-        }) {
+        orchestrator.resetTimeSeriesSnapshots()
+
+        val tokenSnapshots = mutableListOf<TokenTimeSeriesSnapshot>()
+        val tokenProgressCallback: (Long, Long) -> Unit = { promptEvalCount, evalCount ->
+            tokenSnapshots.add(
+                TokenTimeSeriesSnapshot(
+                    timestampMillis = System.currentTimeMillis(),
+                    cumulativePromptTokens = promptEvalCount,
+                    cumulativeGeneratedTokens = evalCount,
+                )
+            )
+        }
+
+        return when (val result = orchestrator.runOllamaEssayJob(
+            model = model,
+            prompt = scenario.prompt,
+            onChunk = onChunk,
+            onTokenProgress = tokenProgressCallback,
+        )) {
             is Result.Success -> {
                 val response = result.data.output
                 onProgress("Response: ${response.take(500)}${if (response.length > 500) "..." else ""}")
-                toBenchmarkResult(result.data, scenario)
+                val cpuSnapshots = orchestrator.getCpuTimeSeriesSnapshots()
+                toBenchmarkResult(result.data, scenario, cpuSnapshots, tokenSnapshots)
             }
             is Result.Failure -> {
                 onProgress("Scenario ${scenario.id} failed: ${result.exception.message}")
@@ -103,6 +124,8 @@ class ForensicsBenchmarkSuite(
     private fun toBenchmarkResult(
         metrics: PerformanceMetrics,
         scenario: BenchmarkScenario,
+        cpuSnapshots: List<CpuTimeSeriesSnapshot>,
+        tokenSnapshots: List<TokenTimeSeriesSnapshot>,
     ): BenchmarkScenarioResult = BenchmarkScenarioResult(
         scenarioId = scenario.id,
         scenarioName = scenario.name,
@@ -119,6 +142,11 @@ class ForensicsBenchmarkSuite(
         faithfulnessScore = metrics.faithfulnessScore,
         timestamp = formatDate(Date()),
         osMetrics = metrics.osMetrics,
+        timeSeries = ScenarioTimeSeries(
+            cpuSnapshots = cpuSnapshots,
+            tokenSnapshots = tokenSnapshots,
+            scenarioId = scenario.id,
+        ),
     )
 
     private suspend fun writeReport(report: BenchmarkSuiteReport, outputDir: File) {

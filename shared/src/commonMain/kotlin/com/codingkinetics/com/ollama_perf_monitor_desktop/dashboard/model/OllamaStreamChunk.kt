@@ -6,6 +6,8 @@ import kotlinx.serialization.Serializable
 data class OllamaStreamChunk(
     val response: String = "",
     val done: Boolean = false,
+    @SerialName("eval_count") val evalCount: Long = 0L,
+    @SerialName("prompt_eval_count") val promptEvalCount: Long = 0L,
 )
 
 // todo evaluate token count, and also use RAGAs to measure hallucination

@@ -3,6 +3,7 @@ package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.MetricsCollector
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.Core
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuSnapshotData
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuTimeSeriesSnapshot
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OSMetrics
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.btopExecutable
@@ -29,6 +30,7 @@ class BtopMetricsCollector: MetricsCollector {
     private var peakThreadCount = 0
     private var peakBtopProcessCpuConsumption = 0.0
     private var peakAggregateCpuConsumption = 0.0
+    private val cpuTimeSeriesSnapshots = mutableListOf<CpuTimeSeriesSnapshot>()
 
     override fun captureMetricsInWindowPane(targetPane: String): String {
         return try {
@@ -137,6 +139,16 @@ override fun stopMetricsDashboard() {
 
             getPeakMetrics(cpuStats, coreTemps, threadCount, telemetry, cpuGraph, btopCpu)
 
+            cpuTimeSeriesSnapshots.add(
+                CpuTimeSeriesSnapshot(
+                    timestampMillis = System.currentTimeMillis(),
+                    cpuConsumption = btopCpu,
+                    aggregateCpuConsumption = aggregateCpu,
+                    temperature = coreTemps,
+                    threadCount = threadCount,
+                )
+            )
+
             val metrics = OSMetrics(
                 cores = cpuStats.cores.sortedBy { it.name.substringAfter(" ").toIntOrNull() ?: 0 },
                 temperature = coreTemps,
@@ -166,6 +178,10 @@ override fun stopMetricsDashboard() {
             btopProcessCpuConsumption = peakBtopProcessCpuConsumption,
             aggregateCpuConsumption = peakAggregateCpuConsumption,
         )
+    }
+
+    override fun getCpuTimeSeriesSnapshots(): List<CpuTimeSeriesSnapshot> {
+        return cpuTimeSeriesSnapshots.toList()
     }
 
     private fun getPeakMetrics(
@@ -243,6 +259,10 @@ override fun stopMetricsDashboard() {
         peakThreadCount = 0
         peakBtopProcessCpuConsumption = 0.0
         peakAggregateCpuConsumption = 0.0
+    }
+
+    override fun resetTimeSeriesSnapshots() {
+        cpuTimeSeriesSnapshots.clear()
     }
 
     private fun parseGlobalCPUTempAndLoad(lines: List<String>): CpuSnapshotData {

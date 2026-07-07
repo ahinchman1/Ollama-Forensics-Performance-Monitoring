@@ -1,6 +1,7 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.benchmarking
 
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OSMetrics
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.ScenarioTimeSeries
 
 data class BenchmarkScenarioResult(
     val scenarioId: String,
@@ -18,6 +19,7 @@ data class BenchmarkScenarioResult(
     val faithfulnessScore: Double,
     val timestamp: String,
     val osMetrics: OSMetrics,
+    val timeSeries: ScenarioTimeSeries = ScenarioTimeSeries(),
 ) {
     val scenarioLabel: String
         get() = "Scenario $scenarioId ($scenarioName)"

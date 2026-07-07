@@ -6,11 +6,13 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.RagasE
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.MetricsCollector
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OSMetrics
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OllamaJobResult
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuTimeSeriesSnapshot
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.ScenarioTimeSeries
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.TokenTimeSeriesSnapshot
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
-
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.flatMap
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.runCommandIgnoringErrors
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxExecutable
@@ -52,9 +54,10 @@ class OllamaJobOrchestrator(
         model: String,
         prompt: String,
         onChunk: (String) -> Unit,
+        onTokenProgress: (promptEvalCount: Long, evalCount: Long) -> Unit = { _, _ -> },
     ): Result<PerformanceMetrics> {
         startMetricsSampling()
-        return when (val ollamaData = jobRunner.runOllamaEssayJob(model, prompt, onChunk)) {
+        return when (val ollamaData = jobRunner.runOllamaEssayJob(model, prompt, onChunk, onTokenProgress)) {
             is Result.Success -> {
                 val peakMetrics = metricsCollector.getPeakMetricsCollected()
                 stopMetricsSampling()
@@ -140,5 +143,13 @@ class OllamaJobOrchestrator(
         stopMetricsSampling()
         metricsCollector.stopMetricsDashboard()
         jobRunner.cleanupRuntimeResources()
+    }
+
+    internal fun getCpuTimeSeriesSnapshots(): List<CpuTimeSeriesSnapshot> {
+        return metricsCollector.getCpuTimeSeriesSnapshots()
+    }
+
+    internal fun resetTimeSeriesSnapshots() {
+        metricsCollector.resetTimeSeriesSnapshots()
     }
 }

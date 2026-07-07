@@ -13,6 +13,7 @@ interface OllamaJobRunner {
         model: String,
         prompt: String,
         onChunk: (String) -> Unit,
+        onTokenProgress: (promptEvalCount: Long, evalCount: Long) -> Unit = { _, _ -> },
     ): Result<OllamaJobResult>
 
     fun cleanupRuntimeResources()

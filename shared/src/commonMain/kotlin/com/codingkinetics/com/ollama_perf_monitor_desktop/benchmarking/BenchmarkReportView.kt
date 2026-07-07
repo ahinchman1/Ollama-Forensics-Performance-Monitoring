@@ -10,6 +10,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.charts.CpuTimeSeriesChart
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.charts.TokenExpenditureChart
 
 @Composable
 fun BenchmarkReportView(report: BenchmarkSuiteReport) {
@@ -30,10 +32,34 @@ fun BenchmarkReportView(report: BenchmarkSuiteReport) {
 
         item { PerformanceSummaryCard(report) }
 
-        item { BarChartCard(report.results) }
-
         items(report.results) { result ->
             ScenarioResultCard(result)
+        }
+
+        item {
+            Text(
+                text = "📈 Time-Series Forensics",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+            )
+        }
+
+        items(report.results) { result ->
+            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                Text(
+                    text = "Scenario ${result.scenarioId}: ${result.scenarioName}",
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                CpuTimeSeriesChart(
+                    snapshots = result.timeSeries.cpuSnapshots,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                TokenExpenditureChart(
+                    snapshots = result.timeSeries.tokenSnapshots,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+            }
         }
     }
 }
@@ -73,66 +99,6 @@ private fun PerformanceSummaryCard(report: BenchmarkSuiteReport) {
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium
                     )
-            }
-        }
-    }
-}
-
-@Composable
-private fun BarChartCard(results: List<BenchmarkScenarioResult>) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .height(120.dp)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = "📊 Token Generation Speed (t/s)",
-                style = MaterialTheme.typography.titleSmall
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            BarChart(results)
-        }
-    }
-}
-
-@Composable
-private fun BarChart(results: List<BenchmarkScenarioResult>) {
-    val speeds = results.map { it.tokenGenerationSpeed }
-    val maxSpeed = speeds.maxOrNull() ?: 1.0
-    
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(60.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        results.forEach { result ->
-            val barHeight = if (maxSpeed > 0) {
-                (result.tokenGenerationSpeed / maxSpeed * 50).dp
-            } else 0.dp
-            
-            Column(
-                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(30.dp)
-                        .height(barHeight)
-                        .background(
-                            when {
-                                result.hallucinationIndex > 0.5 -> MaterialTheme.colorScheme.error
-                                result.hallucinationIndex > 0.25 -> MaterialTheme.colorScheme.secondary
-                                else -> MaterialTheme.colorScheme.tertiary
-                            }
-                        )
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = result.scenarioId,
-                    style = MaterialTheme.typography.bodySmall
-                )
             }
         }
     }
