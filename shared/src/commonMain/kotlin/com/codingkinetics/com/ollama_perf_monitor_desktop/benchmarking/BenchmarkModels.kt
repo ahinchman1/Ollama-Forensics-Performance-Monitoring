@@ -15,8 +15,10 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.Scenar
  * @param totalDurationNanos total request duration (ns).
  * @param generationDurationNanos generation duration (ns).
  * @param loadDurationNanos model-weights load duration (ns).
- * @param promptIngestionSpeed prompt-eval velocity in tokens/second.
- * @param tokenGenerationSpeed generation velocity in tokens/second.
+ * @param promptIngestionSpeed prompt-eval velocity in **tokens/second**, derived from
+ *   [promptTokens] / prompt-eval duration.
+ * @param tokenGenerationSpeed generation velocity in **tokens/second**, derived from
+ *   [generatedTokens] / generation duration.
  */
 data class BenchmarkScenarioResult(
     val scenarioId: String,

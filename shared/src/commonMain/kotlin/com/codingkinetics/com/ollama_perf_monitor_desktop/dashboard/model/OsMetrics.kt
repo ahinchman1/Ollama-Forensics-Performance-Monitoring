@@ -7,6 +7,10 @@ package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model
  * sample) unless documented otherwise. Most fields are populated from a `btop` pane parsed via
  * [com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.MetricsCollector];
  * [processCpuConsumption] additionally comes from `ps`.
+ *
+ * If telemetry cannot be captured (e.g. `btop`/`tmux` unavailable or the pane is unreadable), the
+ * numeric fields fall back to their zero defaults (0 / 0.0) and [cores]/[cpuGraph] to empty — the
+ * run still completes, but CPU/temperature metrics will read as zero rather than failing.
  */
 data class OSMetrics(
     /** CPU package temperature in degrees Celsius (°C). Peak observed; 0 if never collected. */
