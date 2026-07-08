@@ -51,4 +51,10 @@ interface MetricsCollector {
 
     /** Clears the captured time-series snapshots. */
     fun resetTimeSeriesSnapshots()
+
+    /**
+     * Resets all collected state (peak snapshot and time series) together. Convenience for callers
+     * that want a clean slate before/after a run instead of resetting each independently.
+     */
+    fun resetCollectedMetrics()
 }
