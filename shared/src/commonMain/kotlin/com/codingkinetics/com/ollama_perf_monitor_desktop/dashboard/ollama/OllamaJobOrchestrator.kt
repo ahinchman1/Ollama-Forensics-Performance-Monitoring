@@ -20,6 +20,7 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.commandExists
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
@@ -33,8 +34,11 @@ class OllamaJobOrchestrator(
 ) {
     private var metricsSamplingJob: Job? = null
 
+    private val ownsScope = scope == null
+    private val internalScope = if (ownsScope) CoroutineScope(coroutineContextProvider.ioDispatcher) else null
+
     private val samplingScope: CoroutineScope
-        get() = scope ?: CoroutineScope(coroutineContextProvider.ioDispatcher)
+        get() = scope ?: internalScope!!
 
     internal fun checkMonitoringToolDependency(): Result<Unit> {
         return when {
@@ -141,6 +145,7 @@ class OllamaJobOrchestrator(
 
     internal fun cleanupRuntimeResources() {
         stopMetricsSampling()
+        internalScope?.cancel()
         metricsCollector.stopMetricsDashboard()
         jobRunner.cleanupRuntimeResources()
     }
