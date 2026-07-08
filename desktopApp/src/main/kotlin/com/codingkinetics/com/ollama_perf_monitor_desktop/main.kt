@@ -19,11 +19,14 @@ fun main() = application {
         val appSdkResources = remember { AppSdkResources() }
         val contentProvider = ComposeContextContentProvider()
 
+        val groqApiKey = System.getenv("GROQ_API_KEY")
+        val evaluator = groqApiKey?.let { ForensicsEvaluator(appSdkResources.httpClient, it) }
+
         val orchestrator = OllamaJobOrchestrator(
             jobRunner = OllamaJobRunnerDesktop(),
             metricsCollector = BtopMetricsCollector(),
             ragasEngine = RagasEngine(
-                forensicsEvaluator = ForensicsEvaluator(appSdkResources.httpClient),
+                forensicsEvaluator = evaluator,
                 loadContexts = { contentProvider.loadContexts() },
             ),
         )

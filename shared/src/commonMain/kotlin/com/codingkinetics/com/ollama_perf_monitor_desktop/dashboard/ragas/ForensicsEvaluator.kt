@@ -13,9 +13,15 @@ import kotlinx.serialization.json.Json
 
 class ForensicsEvaluator(
     private val client: HttpClient,
+    private val apiKey: String,
     private val coroutineContextProvider: CoroutineContextProvider = CoroutineContextProviderImpl(),
 ) {
-    private val apiKey = System.getenv("GROQ_API_KEY") ?: ""
+    init {
+        require(apiKey.isNotBlank()) {
+            "GROQ_API_KEY is required for forensic evaluation but was not configured."
+        }
+    }
+
     private val json = Json { ignoreUnknownKeys = true }
 
     class GroqRateLimitException(
@@ -28,6 +34,12 @@ class ForensicsEvaluator(
         context: String,
         response: String,
     ): Result<EvaluationResult> = withContext(coroutineContextProvider.ioDispatcher) {
+        if (apiKey.isBlank()) {
+            return@withContext Result.Failure(
+                IllegalStateException("GROQ_API_KEY is required for forensic evaluation but was not configured."),
+            )
+        }
+
         if (response.isBlank()) {
             return@withContext Result.Failure(Exception("No response to evaluate."))
         }
