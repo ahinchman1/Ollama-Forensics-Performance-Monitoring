@@ -7,7 +7,13 @@ plugins {
     alias(libs.plugins.kotlinx.serialization)
 }
 
+kotlin {
+    jvmToolchain(21)
+}
+
 dependencies {
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:${libs.versions.kotlin.get()}"))
+
     implementation(projects.shared)
 
     implementation(compose.desktop.currentOs)
