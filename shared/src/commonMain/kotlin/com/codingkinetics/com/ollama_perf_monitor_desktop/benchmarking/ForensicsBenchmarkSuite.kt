@@ -6,8 +6,9 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OSMetr
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuTimeSeriesSnapshot
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.TokenTimeSeriesSnapshot
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.ScenarioTimeSeries
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
@@ -17,6 +18,7 @@ import java.util.Locale
 class ForensicsBenchmarkSuite(
     private val orchestrator: OllamaJobOrchestrator,
     private val model: String = "llama3.2",
+    private val coroutineContextProvider: CoroutineContextProvider = CoroutineContextProviderImpl(),
 ) {
 
     private val scenarios = listOf(
@@ -162,7 +164,7 @@ class ForensicsBenchmarkSuite(
         val filename = "baseline_run_${report.timestamp}.md"
         val file = File(outputDir, filename)
 
-        withContext(Dispatchers.IO) {
+        withContext(coroutineContextProvider.ioDispatcher) {
             file.writeText(report.toMarkdown())
         }
         println("Report written to: ${file.absolutePath}")

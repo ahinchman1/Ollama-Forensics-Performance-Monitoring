@@ -1,5 +1,7 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas
 
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -7,10 +9,12 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
 
-class ForensicsEvaluator(private val client: HttpClient) {
+class ForensicsEvaluator(
+    private val client: HttpClient,
+    private val coroutineContextProvider: CoroutineContextProvider = CoroutineContextProviderImpl(),
+) {
     private val apiKey = System.getenv("GROQ_API_KEY") ?: ""
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -23,7 +27,7 @@ class ForensicsEvaluator(private val client: HttpClient) {
         prompt: String,
         context: String,
         response: String,
-    ): Result<EvaluationResult> = withContext(Dispatchers.IO) {
+    ): Result<EvaluationResult> = withContext(coroutineContextProvider.ioDispatcher) {
         if (response.isBlank()) {
             return@withContext Result.Failure(Exception("No response to evaluate."))
         }
