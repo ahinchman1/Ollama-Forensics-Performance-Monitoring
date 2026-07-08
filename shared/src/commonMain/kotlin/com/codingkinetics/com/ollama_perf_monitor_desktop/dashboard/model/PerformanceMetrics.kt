@@ -3,19 +3,37 @@ package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.nanosToSeconds
 import java.util.Locale
 
+/**
+ * Aggregated performance metrics for one Ollama generation job, combining model timing/token
+ * data with captured OS telemetry and the forensic evaluation result.
+ *
+ * All `*Nanos` durations are **nanoseconds** sourced from the Ollama API (kept raw for precise
+ * sorting/calculation; use the `formatted*` properties for display). Token counts are exact,
+ * measured by Ollama. [hallucinationIndex] and [faithfulnessScore] are **derived (0.0–1.0)**
+ * from the Groq/Ragas evaluation; when evaluation is disabled or falls back they default to 0.0
+ * (a value near 0.5 indicates the heuristic fallback was triggered).
+ */
 data class PerformanceMetrics(
     val prompt: String,
     val output: String,
     val osMetrics: OSMetrics,
-    val loadDurationNanos: Long,              // Keep raw for precise calculations/sorting
-    val totalDurationNanos: Long,             // Keep raw for precise calculations/sorting
+    /** Model-weights load duration in nanoseconds (Ollama `load_duration`). */
+    val loadDurationNanos: Long,
+    /** Total request duration in nanoseconds (Ollama `total_duration`). */
+    val totalDurationNanos: Long,
     val done: Boolean,
     val doneReason: String,
+    /** Prompt-evaluation token count (Ollama `prompt_eval_count`). */
     val promptTokensCount: Long,
+    /** Prompt-evaluation duration in nanoseconds (Ollama `prompt_eval_duration`). Translates from `tabCount`. */
     val promptEvaluationDurationNanos: Long,
-    val generatedTokensCount: Long,           // Translates from 'tabCount'
-    val generationDurationNanos: Long,        // Translates from 'tabDuration'
-    val hallucinationIndex: Double = 0.0,     // Ragas evaluation
+    /** Generated token count (Ollama `eval_count`). */
+    val generatedTokensCount: Long,
+    /** Generation duration in nanoseconds (Ollama `eval_duration`). Translates from `tabDuration`. */
+    val generationDurationNanos: Long,
+    /** 0.0–1.0, higher means more hallucination. Derived via Groq/Ragas evaluation. */
+    val hallucinationIndex: Double = 0.0,
+    /** 0.0–1.0, higher means more faithful. Derived via Groq/Ragas evaluation. */
     val faithfulnessScore: Double = 0.0,
 ) {
 

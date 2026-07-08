@@ -11,8 +11,7 @@ import kotlinx.serialization.json.Json
  *
  * Owns the single [HttpClient] shared across the application so its engine,
  * connection pools, and dispatcher threads are released deterministically on exit.
- * Call [close] from the application lifecycle (e.g. on window dispose) to avoid
- * leaking sockets and background threads.
+ * Call [close] from the application lifecycle to avoid leaking sockets and background threads.
  */
 class AppSdkResources : AutoCloseable {
 

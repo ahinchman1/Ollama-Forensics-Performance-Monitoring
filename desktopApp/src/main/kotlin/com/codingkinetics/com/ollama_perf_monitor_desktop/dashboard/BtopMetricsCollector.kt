@@ -15,6 +15,15 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.withCliPath
 import kotlin.collections.sortedBy
 
+/**
+ * Desktop (JVM/Unix) implementation of [MetricsCollector] that drives a `btop` instance inside a
+ * `tmux` session and parses its panes for CPU/temperature/thread telemetry.
+ *
+ * Platform-specific: depends on `tmux`, `btop`, `ps`, and `pgrep` being available on the host.
+ * The metrics dashboard lives in a tmux session ([tmuxSessionName]); [stopMetricsDashboard]
+ * kills that session. Telemetry is sampled on demand via [parseBtopData] and the peak snapshot is
+ * tracked internally.
+ */
 class BtopMetricsCollector: MetricsCollector {
 
     private val uiBorderRegex = Regex("[│┤┐└┴┬├─┼┘┌]")

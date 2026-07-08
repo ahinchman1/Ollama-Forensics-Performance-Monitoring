@@ -11,6 +11,15 @@ import io.ktor.http.*
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
+/**
+ * Forensic evaluator that scores a generated response's faithfulness using the Groq LLM API
+ * (a Ragas-style judge).
+ *
+ * @param client Ktor [HttpClient] used for the Groq request. The caller owns its lifecycle.
+ * @param apiKey Groq API key. Must be non-blank; a blank key fails fast at construction and is
+ *   also guarded at call time so no doomed network request is made.
+ * @param coroutineContextProvider dispatcher policy; the network call runs on [CoroutineContextProvider.ioDispatcher].
+ */
 class ForensicsEvaluator(
     private val client: HttpClient,
     private val apiKey: String,
@@ -24,11 +33,22 @@ class ForensicsEvaluator(
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    /**
+     * Thrown when Groq responds with HTTP 429 (Too Many Requests). Carries the suggested
+     * [retryAfterSeconds] from the `Retry-After` header (defaults to `"60"`).
+     */
     class GroqRateLimitException(
         message: String,
         val retryAfterSeconds: String = "60"
     ) : IllegalStateException(message)
 
+    /**
+     * Scores how faithful [response] is to [prompt] and [context] using the Groq judge.
+     *
+     * @return [Result.Success] with an [EvaluationResult] (faithfulness/hallucination, 0.0–1.0),
+     *   or [Result.Failure] when the response is blank, the API errors, or parsing fails. The
+     *   call executes on the IO dispatcher and is a no-op network-wise if the API key is blank.
+     */
     suspend fun evaluateFaithfulness(
         prompt: String,
         context: String,
