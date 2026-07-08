@@ -13,9 +13,32 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.util.runCommandIgnorin
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxExecutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.withCliPath
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.averageOrZero
 import kotlin.collections.sortedBy
 
+/**
+ * Desktop (JVM/Unix) implementation of [MetricsCollector] that drives a `btop` instance inside a
+ * `tmux` session and parses its panes for CPU/temperature/thread telemetry.
+ *
+ * Platform-specific: depends on `tmux`, `btop`, `ps`, and `pgrep` being available on the host.
+ * The metrics dashboard lives in a tmux session ([tmuxSessionName]); [stopMetricsDashboard]
+ * kills that session. Telemetry is sampled on demand via [parseBtopData] and the peak snapshot is
+ * tracked internally.
+ *
+ * This collector holds mutable state (peak snapshot and the time-series list). It is intended to
+ * be driven by a single owner — the [OllamaJobOrchestrator] sampling coroutine — and is **not**
+ * safe for concurrent access from the UI thread and the collection coroutine; callers should not
+ * invoke sampling and reading/resetting concurrently.
+ */
 class BtopMetricsCollector: MetricsCollector {
+
+    /**
+     * Maximum number of retained CPU time-series snapshots. When exceeded, the oldest snapshot is
+     * dropped so the list cannot grow unbounded if the dashboard stays open for a long time.
+     */
+    private companion object {
+        const val MAX_TIME_SERIES_SNAPSHOTS = 3_600
+    }
 
     private val uiBorderRegex = Regex("[│┤┐└┴┬├─┼┘┌]")
     private val coreRegex = Regex("""C(\d+)\s+(\d+(?:\.\d+)?)%\s+(\d+)°C""")
@@ -102,9 +125,9 @@ class BtopMetricsCollector: MetricsCollector {
         }
     }
 
-override fun stopMetricsDashboard() {
-       runCommandIgnoringErrors(tmuxExecutable, "kill-session", "-t", tmuxSessionName)
-   }
+    override fun stopMetricsDashboard() {
+        runCommandIgnoringErrors(tmuxExecutable, "kill-session", "-t", tmuxSessionName)
+    }
 
     override suspend fun parseBtopData(): Result<OSMetrics> {
         val rawText = captureMetricsInWindowPane()
@@ -118,7 +141,7 @@ override fun stopMetricsDashboard() {
 
     private fun getCoreTemperatures(cpuSnapshotData: CpuSnapshotData): Int {
         return if (cpuSnapshotData.globalTemperature == 0 && cpuSnapshotData.cores.isNotEmpty()) {
-            cpuSnapshotData.cores.map { it.temperature }.roverage().toInt()
+            cpuSnapshotData.cores.map { it.temperature }.averageOrZero().toInt()
         } else {
             cpuSnapshotData.globalTemperature
         }
@@ -148,6 +171,9 @@ override fun stopMetricsDashboard() {
                     threadCount = threadCount,
                 )
             )
+            if (cpuTimeSeriesSnapshots.size > MAX_TIME_SERIES_SNAPSHOTS) {
+                cpuTimeSeriesSnapshots.removeAt(0)
+            }
 
             val metrics = OSMetrics(
                 cores = cpuStats.cores.sortedBy { it.name.substringAfter(" ").toIntOrNull() ?: 0 },
@@ -263,6 +289,11 @@ override fun stopMetricsDashboard() {
 
     override fun resetTimeSeriesSnapshots() {
         cpuTimeSeriesSnapshots.clear()
+    }
+
+    override fun resetCollectedMetrics() {
+        resetPeakMetrics()
+        resetTimeSeriesSnapshots()
     }
 
     private fun parseGlobalCPUTempAndLoad(lines: List<String>): CpuSnapshotData {
@@ -402,13 +433,6 @@ override fun stopMetricsDashboard() {
     } catch (e: Exception) {
         println("Border sanitizing failed. Cause: ${e.message}")
         ""
-    }
-
-    private fun List<Int>.roverage(): Double = try {
-        if (isEmpty()) 0.0 else this.sum().toDouble() / this.size
-    } catch(e: Exception) {
-        println("roverage() failed: Cause: $e")
-        0.0
     }
 
     private fun gpuMonitoringCommand(): String {

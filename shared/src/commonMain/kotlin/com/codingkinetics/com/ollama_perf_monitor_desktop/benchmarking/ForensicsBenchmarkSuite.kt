@@ -6,17 +6,32 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OSMetr
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuTimeSeriesSnapshot
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.TokenTimeSeriesSnapshot
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.ScenarioTimeSeries
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * Runs the configured Ollama benchmark scenarios sequentially and produces an aggregate
+ * [BenchmarkSuiteReport].
+ *
+ * This is the default [BenchmarkRunner] implementation. For each scenario it starts the Ollama
+ * server + tmux dashboard (via [orchestrator]), runs the generation job, samples OS telemetry,
+ * and runs the forensic evaluation, then releases runtime resources in a `finally` block so the
+ * server process and tmux session are cleaned up even on failure. If [outputDir] is provided,
+ * the Markdown report is written there on the IO dispatcher.
+ *
+ * @param orchestrator owns the Ollama server, metrics dashboard, and evaluation lifecycle.
+ * @param model Ollama model used for every scenario (e.g. `llama3.2`).
+ */
 class ForensicsBenchmarkSuite(
     private val orchestrator: OllamaJobOrchestrator,
     private val model: String = "llama3.2",
+    private val coroutineContextProvider: CoroutineContextProvider = CoroutineContextProviderImpl(),
 ) {
 
     private val scenarios = listOf(
@@ -158,11 +173,15 @@ class ForensicsBenchmarkSuite(
         ),
     )
 
+    /**
+     * Exports the benchmark report to `<outputDir>/baseline_run_<timestamp>.md`.
+     * The file write runs on the IO dispatcher.
+     */
     private suspend fun writeReport(report: BenchmarkSuiteReport, outputDir: File) {
         val filename = "baseline_run_${report.timestamp}.md"
         val file = File(outputDir, filename)
 
-        withContext(Dispatchers.IO) {
+        withContext(coroutineContextProvider.ioDispatcher) {
             file.writeText(report.toMarkdown())
         }
         println("Report written to: ${file.absolutePath}")
@@ -172,6 +191,14 @@ class ForensicsBenchmarkSuite(
         SimpleDateFormat("yyyy-MM-dd", Locale.US).format(date)
 }
 
+/**
+ * Definition of a single benchmark scenario.
+ *
+ * @param id stable scenario identifier (i.e. `01`), used in report labels.
+ * @param name human-readable scenario name.
+ * @param prompt prompt sent to the model for this scenario.
+ * @param description what the scenario stresses (used for reporting/context).
+ */
 data class BenchmarkScenario(
     val id: String,
     val name: String,

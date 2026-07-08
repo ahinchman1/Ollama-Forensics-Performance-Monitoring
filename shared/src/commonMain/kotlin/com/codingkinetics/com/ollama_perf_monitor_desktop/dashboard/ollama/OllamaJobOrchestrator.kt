@@ -20,10 +20,23 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.commandExists
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
+/**
+ * Orchestrates a full Ollama forensic job: it drives the Ollama server via [jobRunner], samples
+ * OS telemetry through [metricsCollector], and runs the forensic (Ragas/Groq) evaluation via
+ * [ragasEngine].
+ *
+ * This is the runtime-lifecycle owner for a job — it starts/stops the metrics sampling coroutine,
+ * the tmux metrics dashboard, and the Ollama server process. Callers must invoke
+ * [cleanupRuntimeResources] (typically from the UI layer on dispose / job completion / stop) to
+ * release the Ollama process, kill the tmux session, and cancel the internally-owned coroutine
+ * scope. If no [scope] is supplied, a scope is created internally and cancelled on cleanup.
+ */
 class OllamaJobOrchestrator(
     private val jobRunner: OllamaJobRunner,
     private val metricsCollector: MetricsCollector,
@@ -33,8 +46,8 @@ class OllamaJobOrchestrator(
 ) {
     private var metricsSamplingJob: Job? = null
 
-    private val samplingScope: CoroutineScope
-        get() = scope ?: CoroutineScope(coroutineContextProvider.ioDispatcher)
+    private val ownedScope = CoroutineScope(SupervisorJob() + coroutineContextProvider.ioDispatcher)
+    private val samplingScope: CoroutineScope = scope ?: ownedScope
 
     internal fun checkMonitoringToolDependency(): Result<Unit> {
         return when {
@@ -48,8 +61,17 @@ class OllamaJobOrchestrator(
         }
     }
 
+    /** Starts the Ollama server via the configured [OllamaJobRunner]. */
     fun startServer() = jobRunner.startOllamaServer()
 
+    /**
+     * Runs a single Ollama essay job end-to-end: starts metrics sampling, streams the generation,
+     * computes peak OS metrics, and runs the forensic evaluation.
+     *
+     * @return the resulting [PerformanceMetrics] (including the derived faithfulness/hallucination
+     *   scores), or [Result.Failure] if the generation or evaluation fails. Metrics sampling is
+     *   always stopped afterwards.
+     */
     internal suspend fun runOllamaEssayJob(
         model: String,
         prompt: String,
@@ -62,7 +84,7 @@ class OllamaJobOrchestrator(
                 val peakMetrics = metricsCollector.getPeakMetricsCollected()
                 stopMetricsSampling()
                 logCompletedStats(ollamaData.data)
-                metricsCollector.resetPeakMetrics()
+                metricsCollector.resetCollectedMetrics()
                 evaluateRagasScore(prompt, ollamaData.data, peakMetrics)
             }
             is Result.Failure -> {
@@ -112,11 +134,19 @@ class OllamaJobOrchestrator(
 
     }
 
+    /**
+     * (Re)creates and launches the tmux metrics dashboard session. Any pre-existing session with
+     * the same name is killed first to avoid leaks.
+     */
     internal fun startDashboard() {
         runCommandIgnoringErrors(tmuxExecutable, "kill-session", "-t", tmuxSessionName)
         metricsCollector.startMetricsDashboard()
     }
 
+    /**
+     * Begins periodic (1s) OS telemetry sampling into [metricsCollector] on the sampling scope.
+     * Cancels any in-flight sampling job first.
+     */
     internal fun startMetricsSampling() {
         metricsSamplingJob?.cancel()
         metricsSamplingJob = samplingScope.launch {
@@ -127,6 +157,7 @@ class OllamaJobOrchestrator(
         }
     }
 
+    /** Stops the periodic metrics sampling job, if running. */
     internal fun stopMetricsSampling() {
         metricsSamplingJob?.cancel()
         metricsSamplingJob = null
@@ -139,8 +170,15 @@ class OllamaJobOrchestrator(
         return metricsCollector.captureMetricsInWindowPane(targetPane)
     }
 
+    /**
+     * Releases all runtime resources owned by this orchestrator: stops metrics sampling, cancels
+     * the internally-owned coroutine scope, tears down the tmux dashboard, and kills the Ollama
+     * server process. Safe to call multiple times.
+     */
     internal fun cleanupRuntimeResources() {
         stopMetricsSampling()
+        if (scope == null) {
+            ownedScope.cancel()
         metricsCollector.stopMetricsDashboard()
         jobRunner.cleanupRuntimeResources()
     }
@@ -151,5 +189,10 @@ class OllamaJobOrchestrator(
 
     internal fun resetTimeSeriesSnapshots() {
         metricsCollector.resetTimeSeriesSnapshots()
+    }
+
+    /** Resets both the peak snapshot and time-series buffers via the metrics collector. */
+    internal fun resetCollectedMetrics() {
+        metricsCollector.resetCollectedMetrics()
     }
 }

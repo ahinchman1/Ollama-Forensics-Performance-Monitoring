@@ -16,21 +16,21 @@ class ExtensionUtilsTest {
     }
 
     @Test
-    fun `roverage should return average for non-empty lists`() {
+    fun `averageOrZero should return average for non-empty lists`() {
         val numbers = listOf(1, 2, 3, 4, 5)
-        assertEquals(3.0, numbers.roverage(), 0.0001)
+        assertEquals(3.0, numbers.averageOrZero(), 0.0001)
     }
 
     @Test
-    fun `roverage should return exact decimal average when result is a fraction`() {
+    fun `averageOrZero should return exact decimal average when result is a fraction`() {
         val numbers = listOf(1, 2)
-        assertEquals(1.5, numbers.roverage(), 0.0001)
+        assertEquals(1.5, numbers.averageOrZero(), 0.0001)
     }
 
     @Test
-    fun `roverage should return 0 point 0 when list is empty`() {
+    fun `averageOrZero should return 0 point 0 when list is empty`() {
         val emptyList = emptyList<Int>()
-        assertEquals(0.0, emptyList.roverage(), 0.0001)
+        assertEquals(0.0, emptyList.averageOrZero(), 0.0001)
     }
 
     @Test
