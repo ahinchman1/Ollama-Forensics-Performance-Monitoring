@@ -67,7 +67,7 @@ class ForensicsBenchmarkSuite(
                 val result = runScenario(scenario, onProgress, onChunk)
                 result?.let {
                     results.add(it)
-                    val status = "Completed: ${scenario.name}, Hallucination Index: ${it.hallucinationIndex}"
+                    val status = "Completed: ${scenario.name} | Hallucination Index: ${it.hallucinationIndex}"
                     onProgress(status)
                     println(status)
                 }
