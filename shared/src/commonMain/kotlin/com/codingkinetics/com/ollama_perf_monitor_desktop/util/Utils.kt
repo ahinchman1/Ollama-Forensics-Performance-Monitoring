@@ -7,7 +7,7 @@ internal fun Long.nanosToSeconds(): Double = try {
     0.0
 }
 
-fun List<Int>.averageOrZero(): Double = if (isEmpty()) 0.0 else this.sum().toDouble() / this.size
+internal fun List<Int>.roverage(): Double = if (isEmpty()) 0.0 else this.sum().toDouble() / this.size
 
 /**
  * Extension function to verify if a character belongs to the Unicode Braille Patterns block.

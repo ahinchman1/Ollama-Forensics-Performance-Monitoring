@@ -4,7 +4,7 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OSMetr
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
 
 class RagasEngine(
-    val forensicsEvaluator: ForensicsEvaluator?,
+    val forensicsEvaluator: ForensicsEvaluator,
     val loadContexts: suspend () -> Result<List<String>>,
 ) {
 
@@ -58,15 +58,11 @@ class RagasEngine(
 
         println("Analyzing cross-domain statement alignment between hardware truth and generated text...")
 
-        val evaluationResult: Result<EvaluationResult> = forensicsEvaluator?.evaluateFaithfulness(
+        return forensicsEvaluator.evaluateFaithfulness(
             prompt = truncatedPrompt,
             context = combinedValidationContext,
             response = truncatedResponse,
-        ) ?: Result.Failure(
-            IllegalStateException("Forensic evaluation is disabled: GROQ_API_KEY is not configured."),
-        )
-
-        return evaluationResult.also { result ->
+        ).also { result ->
             if (result is Result.Success) {
                 val metrics = result.data
                 println("\n====================================================================")

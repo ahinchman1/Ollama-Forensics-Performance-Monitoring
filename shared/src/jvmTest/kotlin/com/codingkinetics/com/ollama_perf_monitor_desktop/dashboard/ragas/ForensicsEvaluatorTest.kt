@@ -42,7 +42,7 @@ class ForensicsEvaluatorTest {
         }
 
         val client = createMockClient(mockEngine)
-        val evaluator = ForensicsEvaluator(client, "test-api-key")
+        val evaluator = ForensicsEvaluator(client)
 
         val result = evaluator.evaluateFaithfulness(
             prompt = "What color is the sky?",
@@ -60,7 +60,7 @@ class ForensicsEvaluatorTest {
     fun `evaluateFaithfulness returns Failure immediately if response is blank`() = runBlocking {
         val mockEngine = MockEngine { respondBadRequest() }
         val client = createMockClient(mockEngine)
-        val evaluator = ForensicsEvaluator(client, "test-api-key")
+        val evaluator = ForensicsEvaluator(client)
 
         val result = evaluator.evaluateFaithfulness(
             prompt = "Test prompt",
@@ -90,7 +90,7 @@ class ForensicsEvaluatorTest {
             )
         }
         val client = createMockClient(mockEngine)
-        val evaluator = ForensicsEvaluator(client, "test-api-key")
+        val evaluator = ForensicsEvaluator(client)
 
         val result = evaluator.evaluateFaithfulness("p", "c", "r")
 
@@ -110,7 +110,7 @@ class ForensicsEvaluatorTest {
             )
         }
         val client = createMockClient(mockEngine)
-        val evaluator = ForensicsEvaluator(client, "test-api-key")
+        val evaluator = ForensicsEvaluator(client)
 
         val result = evaluator.evaluateFaithfulness("p", "c", "r")
 
@@ -130,7 +130,7 @@ class ForensicsEvaluatorTest {
             )
         }
         val client = createMockClient(mockEngine)
-        val evaluator = ForensicsEvaluator(client, "test-api-key")
+        val evaluator = ForensicsEvaluator(client)
 
         val result = evaluator.evaluateFaithfulness("p", "c", "r")
 
@@ -146,7 +146,7 @@ class ForensicsEvaluatorTest {
             throw Exception("Network connection lost")
         }
         val client = createMockClient(mockEngine)
-        val evaluator = ForensicsEvaluator(client, "test-api-key")
+        val evaluator = ForensicsEvaluator(client)
 
         val result = evaluator.evaluateFaithfulness("p", "c", "r")
 

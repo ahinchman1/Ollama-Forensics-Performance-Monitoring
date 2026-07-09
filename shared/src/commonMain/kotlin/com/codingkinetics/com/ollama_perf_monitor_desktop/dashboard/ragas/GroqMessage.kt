@@ -18,14 +18,6 @@ data class GroqError(val error: GroqErrorDetail)
 @Serializable
 data class GroqErrorDetail(val message: String)
 
-/**
- * Forensic evaluation scores for a generated response.
- *
- * @param faithfulnessScore 0.0–1.0, higher means the response is more faithful to the prompt and
- *   telemetry context. Derived from the Groq LLM judge.
- * @param hallucinationIndex 0.0–1.0, higher means more hallucination. Derived as
- *   `1.0 - faithfulnessScore`. A value near 0.5 indicates the heuristic fallback was used.
- */
 @Serializable
 data class EvaluationResult(
     val faithfulnessScore: Double,

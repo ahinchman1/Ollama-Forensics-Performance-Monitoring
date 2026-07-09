@@ -3,23 +3,6 @@ package com.codingkinetics.com.ollama_perf_monitor_desktop.benchmarking
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OSMetrics
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.ScenarioTimeSeries
 
-/**
- * Per-scenario benchmark result.
- *
- * Durations are **nanoseconds** (raw, from the Ollama API); speeds are **tokens/second**;
- * [hallucinationIndex] and [faithfulnessScore] are **derived 0.0–1.0** scores from the Groq/Ragas
- * evaluation (near 0.5 indicates a fallback). [timestamp] is a human-readable date string.
- *
- * @param generatedTokens tokens produced by the model (`eval_count`).
- * @param promptTokens tokens evaluated from the prompt (`prompt_eval_count`).
- * @param totalDurationNanos total request duration (ns).
- * @param generationDurationNanos generation duration (ns).
- * @param loadDurationNanos model-weights load duration (ns).
- * @param promptIngestionSpeed prompt-eval velocity in **tokens/second**, derived from
- *   [promptTokens] / prompt-eval duration.
- * @param tokenGenerationSpeed generation velocity in **tokens/second**, derived from
- *   [generatedTokens] / generation duration.
- */
 data class BenchmarkScenarioResult(
     val scenarioId: String,
     val scenarioName: String,
@@ -51,13 +34,6 @@ data class BenchmarkScenarioResult(
         get() = "%.2f t/s".format(promptIngestionSpeed)
 }
 
-/**
- * Aggregate report across all benchmark scenarios.
- *
- * Aggregate CPU/temperature values are **peak** readings across scenarios; speed averages are
- * arithmetic means over the per-scenario results. [toMarkdown] renders a human-readable report
- * (used by the benchmark report exporter).
- */
 data class BenchmarkSuiteReport(
     val results: List<BenchmarkScenarioResult>,
     val timestamp: String,
@@ -71,23 +47,18 @@ data class BenchmarkSuiteReport(
     val meanTotalExecutionTime: Double
         get() = results.map { it.totalDurationNanos }.average() / 1_000_000_000.0
 
-    /** Peak per-process CPU % (from `ps`) across scenarios. */
     val peakCpuConsumption: Long
         get() = results.maxOfOrNull { it.osMetrics.processCpuConsumption } ?: 0L
 
-    /** Peak per-process CPU % as reported by btop across scenarios. */
     val peakBtopCpuConsumption: Double
         get() = results.maxOfOrNull { it.osMetrics.btopProcessCpuConsumption } ?: 0.0
 
-    /** Peak aggregate (sum-of-cores) CPU % across scenarios. */
     val peakAggregateCpuConsumption: Double
         get() = results.maxOfOrNull { it.osMetrics.aggregateCpuConsumption } ?: 0.0
 
-    /** Peak core package temperature (°C) across scenarios. */
     val peakTemperature: Int
         get() = results.maxOfOrNull { it.osMetrics.temperature } ?: 0
 
-    /** Peak live thread count across scenarios. */
     val peakThreadCount: Int
         get() = results.maxOfOrNull { it.osMetrics.threadCount } ?: 0
 
@@ -101,7 +72,6 @@ data class BenchmarkSuiteReport(
             else -> "NORMAL"
         }
 
-    /** Renders the report as Markdown for export to disk. */
     fun toMarkdown(): String = buildString {
         appendLine("# OLLAMA NATIVE FORENSICS PERFORMANCE REPORT")
         appendLine("Date: $timestamp")
