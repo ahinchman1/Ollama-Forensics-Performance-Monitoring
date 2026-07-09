@@ -21,6 +21,7 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.util.commandExists
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
@@ -40,7 +41,7 @@ class OllamaJobOrchestrator(
     private val jobRunner: OllamaJobRunner,
     private val metricsCollector: MetricsCollector,
     private val ragasEngine: RagasEngine,
-    private val coroutineContextProvider: CoroutineContextProvider = CoroutineContextProviderImpl(),
+    coroutineContextProvider: CoroutineContextProvider = CoroutineContextProviderImpl(),
     private val scope: CoroutineScope? = null,
 ) {
     private var metricsSamplingJob: Job? = null
@@ -154,7 +155,7 @@ class OllamaJobOrchestrator(
         metricsSamplingJob = samplingScope.launch {
             while (isActive) {
                 metricsCollector.parseBtopData()
-                kotlinx.coroutines.delay(1_000.milliseconds)
+                delay(500.milliseconds)
             }
         }
     }

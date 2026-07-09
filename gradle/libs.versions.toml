@@ -8,6 +8,7 @@ material3 = "1.11.0-alpha07"
 kotlinx-serialization = "1.7.3"
 mockk = "1.13.16"
 ktor = "3.5.0"
+shadow = "8.1.1"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -39,3 +40,4 @@ composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "k
 kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+shadow-jar = { id = "com.github.johnrengelman.shadow", version.ref = "shadow"}

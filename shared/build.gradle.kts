@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinx.serialization)
+    alias(libs.plugins.shadow.jar)
 }
 
 kotlin {
@@ -26,7 +27,6 @@ kotlin {
             implementation(libs.ktor.cio)
             implementation(libs.ktor.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
-
             implementation(fileTree("libs") { include("*.jar") })
         }
         jvmMain.dependencies {
