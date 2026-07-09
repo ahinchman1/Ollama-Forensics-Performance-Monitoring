@@ -1,3 +1,4 @@
+import org.gradle.api.file.DuplicatesStrategy
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
@@ -5,6 +6,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinx.serialization)
+    alias(libs.plugins.shadow.jar)
 }
 
 kotlin {
@@ -38,4 +40,23 @@ compose.desktop {
             packageVersion = "1.0.0"
         }
     }
+}
+
+tasks.withType(com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar::class.java).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    mergeServiceFiles()
+
+    exclude("META-INF/*.SF")
+    exclude("META-INF/*.DSA")
+    exclude("META-INF/*.RSA")
+    exclude("META-INF/INDEX.LIST")
+    exclude("META-INF/MANIFEST.MF")
+
+    exclude("META-INF/LICENSE")
+    exclude("META-INF/LICENSE.txt")
+    exclude("META-INF/LICENSE.md")
+    exclude("META-INF/NOTICE")
+    exclude("META-INF/NOTICE.txt")
+    exclude("META-INF/NOTICE.md")
 }
