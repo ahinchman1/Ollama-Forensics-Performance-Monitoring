@@ -2,6 +2,7 @@ import org.gradle.api.file.DuplicatesStrategy
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
+    `maven-publish`
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
@@ -42,7 +43,11 @@ compose.desktop {
     }
 }
 
-tasks.withType(com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar::class.java).configureEach {
+tasks.shadowJar {
+    manifest {
+        attributes["Main-Class"] = "com.codingkinetics.com.ollama_perf_monitor_desktop.MainKt"
+    }
+
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
     mergeServiceFiles()
@@ -59,4 +64,15 @@ tasks.withType(com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar::class
     exclude("META-INF/NOTICE")
     exclude("META-INF/NOTICE.txt")
     exclude("META-INF/NOTICE.md")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("shadow") {
+            from(components["shadow"])
+            groupId = "com.codingkinetics"
+            artifactId = "ollama-forensics-performance-monitoring"
+            version = "1.0.0"
+        }
+    }
 }

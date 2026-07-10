@@ -34,6 +34,8 @@ class OllamaJobRunnerDesktop(
 
     private var serverProcess: Process? = null
 
+    private val serverLogFile = File(System.getProperty("user.home"), "ollama_server.log")
+
     private val jsonWorker = Json {
         ignoreUnknownKeys = true
     }
@@ -41,22 +43,24 @@ class OllamaJobRunnerDesktop(
     private val ollamaBaseUrl = "http://127.0.0.1:11434"
     private val ollamaStreamingEndpointUrl = URL("$ollamaBaseUrl/api/generate")
 
+    override fun getServerLogPath(): String = serverLogFile.absolutePath
+
     override fun startOllamaServer() = try {
         killOllamaRuntimeProcesses()
         val userHome = System.getProperty("user.home")
-        val logFile = File(userHome, "ollama_server.log")
 
-        if (logFile.exists()) logFile.delete()
+        if (serverLogFile.exists()) serverLogFile.delete()
 
         println("Initializing Ollama Server via target: $ollamaExecutable")
-        println("Directing runtime logs straight to absolute path: ${logFile.absolutePath}")
+        println("Directing runtime logs straight to absolute path: ${serverLogFile.absolutePath}")
 
         val builder = ProcessBuilder(ollamaExecutable, "serve")
             .withCliPath()
-            .redirectOutput(ProcessBuilder.Redirect.to(logFile))
-            .redirectError(ProcessBuilder.Redirect.to(logFile))
+            .redirectOutput(ProcessBuilder.Redirect.to(serverLogFile))
+            .redirectError(ProcessBuilder.Redirect.to(serverLogFile))
 
         builder.environment()["HOME"] = userHome
+        builder.environment()["OLLAMA_DEBUG"] = "1"
 
         builder.directory(File(userHome))
 

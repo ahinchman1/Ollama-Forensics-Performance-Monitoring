@@ -67,6 +67,9 @@ class OllamaJobOrchestrator(
     /** Starts the Ollama server via the configured [OllamaJobRunner]. */
     fun startServer() = jobRunner.startOllamaServer()
 
+    /** Absolute path of the file the Ollama server redirects its stdout/stderr to. */
+    internal fun getServerLogPath(): String = jobRunner.getServerLogPath()
+
     /**
      * Runs a single Ollama essay job end-to-end: starts metrics sampling, streams the generation,
      * computes peak OS metrics, and runs the forensic evaluation.

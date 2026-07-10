@@ -1,13 +1,14 @@
 package com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ui.model
 
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.formatter.PerformanceMetricsFormatter
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollama.OllamaJobOrchestrator
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.ForensicsEvaluator
+import com.codingkinetics.com.ollama_perf_monitor_desktop.benchmarking.ForensicsBenchmarkSuite
+import com.codingkinetics.com.ollama_perf_monitor_desktop.util.openFile
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.PerformanceMetrics
-import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.ForensicsEvaluator
-import com.codingkinetics.com.ollama_perf_monitor_desktop.benchmarking.ForensicsBenchmarkSuite
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 class DashboardViewModel(
     private val scope: CoroutineScope,
@@ -155,6 +157,10 @@ class DashboardViewModel(
     }
 
     fun runBenchmark() {
+        val logFile = File(System.getProperty("user.home"), ".ollama-perf-monitor/logs/benchmark.log").apply {
+            parentFile?.mkdirs()
+        }
+
         _viewState.value = DashboardViewState.ActiveJob(
             statusMessage = "Starting benchmark suite...",
             metricsPanel = "Initializing benchmark...",
@@ -169,6 +175,7 @@ class DashboardViewModel(
                     model = ollamaModel,
                 )
                 val report = suite.runSuite(
+                    logFile = logFile,
                     onProgress = { status ->
                         _viewState.update { current ->
                             if (current is DashboardViewState.ActiveJob) {
@@ -194,6 +201,7 @@ class DashboardViewModel(
                 )
                 withContext(contextPool.mainDispatcher) {
                     _viewState.value = DashboardViewState.BenchmarkResults(report)
+                    openFile(logFile)
                 }
             } catch (e: Exception) {
                 withContext(contextPool.mainDispatcher) {
@@ -241,6 +249,19 @@ class DashboardViewModel(
         val processedMetricsLayout = metricsFormatter.formatDiagnostics(metrics, ollamaModel)
         val systemsPanelSummary = metricsFormatter.formatSystemSnapshot(metrics)
 
+        val logFile = File(System.getProperty("user.home"), ".ollama-perf-monitor/logs/job.log").apply {
+            parentFile?.mkdirs()
+        }
+        val logContent = buildString {
+            appendLine("===== Ollama Job Diagnostics =====")
+            appendLine(processedMetricsLayout)
+            appendLine()
+            appendLine("===== System Snapshot =====")
+            appendLine(systemsPanelSummary)
+        }
+        runCatching { logFile.writeText(logContent) }
+            .onFailure { println("Unable to write job log. Cause: ${it.message}") }
+
         println(processedMetricsLayout)
         println(systemsPanelSummary)
 
@@ -255,6 +276,8 @@ class DashboardViewModel(
                 )
             } else currentState
         }
+
+        openFile(logFile)
     }
 
 }

@@ -71,16 +71,67 @@ Use the run configurations in your IDE's toolbar, or Gradle directly:
 
 The first run will download dependencies and (if needed) auto-provision JDK 21.
 
-### Packaging a native installer
+### Packaging a native installer (recommended)
 
-Compose Desktop can produce platform installers (DMG / MSI / Deb), configured under
-`desktopApp/build.gradle.kts` → `compose.desktop.application.nativeDistributions`:
+This is a Compose Desktop app, so the easiest way to distribute it is with a platform installer.
+Compose bundles a JRE, so end-users do **not** need JDK 21 installed.
+
+The supported formats are configured in `desktopApp/build.gradle.kts` under
+`compose.desktop.application.nativeDistributions` (DMG, MSI, Deb).
 
 ```bash
+# Build the installer for the current OS
+./gradlew :desktopApp:packageDistributionForCurrentOS
+
+# Or build a specific target
 ./gradlew :desktopApp:packageDmg     # macOS
 ./gradlew :desktopApp:packageMsi     # Windows
-./gradlew :desktopApp:packageDeb     # Linux
+./gradlew :desktopApp:packageDeb     # Linux / Raspberry Pi
 ```
+
+The output lands under `desktopApp/build/compose/binaries/`. You can hand the installer to
+anyone on the same platform; they double-click to install.
+
+### Shadow JAR (advanced)
+
+A fat JAR is also buildable via the Shadow plugin and is useful for CI or for platforms where
+you want to supply your own JRE:
+
+```bash
+./gradlew :desktopApp:shadowJar
+```
+
+The output is `desktopApp/build/libs/desktopApp-all.jar`. The build script sets the
+`Main-Class` manifest attribute to `com.codingkinetics.com.ollama_perf_monitor_desktop.MainKt`
+so you can run it directly:
+
+```bash
+java -jar desktopApp/build/libs/desktopApp-all.jar
+```
+
+### Publishing to Maven Local
+
+If you want to consume this project as a dependency in another Gradle build on the same machine,
+publish the Shadow JAR to your local Maven repository:
+
+```bash
+./gradlew :desktopApp:publishToMavenLocal
+```
+
+The artifact coordinates are:
+- **Group:** `com.codingkinetics`
+- **Artifact:** `ollama-forensics-performance-monitoring`
+- **Version:** `1.0.0`
+
+After publishing, another project can pull it in with:
+
+```kotlin
+dependencies {
+    implementation("com.codingkinetics:ollama-forensics-performance-monitoring:1.0.0")
+}
+```
+
+To make this available globally, publish to Maven Central or JitPack instead of `mavenLocal()`.
 
 ## Running tests
 
