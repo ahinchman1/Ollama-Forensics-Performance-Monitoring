@@ -34,6 +34,7 @@ data class BenchmarkScenarioResult(
     val faithfulnessScore: Double,
     val timestamp: String,
     val osMetrics: OSMetrics,
+    val runtimePids: List<String> = emptyList(),
     val timeSeries: ScenarioTimeSeries = ScenarioTimeSeries(),
 ) {
     val scenarioLabel: String
@@ -143,6 +144,7 @@ data class BenchmarkSuiteReport(
         appendLine("## Detailed Scenario Results")
         results.forEach { result ->
             appendLine("### ${result.scenarioLabel}")
+            appendLine("- Runtime PID(s): ${result.runtimePids.ifEmpty { listOf("not resolved") }.joinToString(", ")}")
             appendLine("- Prompt Tokens: ${result.promptTokens}")
             appendLine("- Generated Tokens: ${result.generatedTokens}")
             appendLine("- Total Duration: ${result.formattedTotalDuration}")

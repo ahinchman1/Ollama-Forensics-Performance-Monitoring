@@ -57,6 +57,17 @@ fun runCommandIgnoringErrors(vararg command: String) {
     }
 }
 
+fun openFile(file: File) {
+    val path = file.absolutePath
+    val command = when {
+        System.getProperty("os.name").lowercase().contains("mac") ||
+        System.getProperty("os.name").lowercase().contains("darwin") -> listOf("open", path)
+        System.getProperty("os.name").lowercase().contains("win") -> listOf("cmd", "/c", "start", "", path)
+        else -> listOf("xdg-open", path)
+    }
+    runCommandIgnoringErrors(*command.toTypedArray())
+}
+
 fun commandExists(command: String): Boolean {
     val executable = resolveExecutable(command)
     if (File(executable).isAbsolute && File(executable).exists()) {
@@ -71,4 +82,56 @@ fun commandExists(command: String): Boolean {
     } catch (_: Exception) {
         false
     }
+}
+
+fun resolveProcessIdsByCommandPatterns(patterns: List<String>): List<String> {
+    val pgrepPids = patterns.flatMap { pattern ->
+        runCatching {
+            val process = ProcessBuilder("pgrep", "-f", pattern)
+                .withCliPath()
+                .start()
+
+            process.inputStream.bufferedReader()
+                .use { it.readLines() }
+                .map { it.trim() }
+                .filter { it.isNotBlank() && it.all(Char::isDigit) }
+        }.getOrElse { emptyList() }
+    }
+
+    if (pgrepPids.isNotEmpty()) {
+        return pgrepPids.distinct()
+    }
+
+    return runCatching {
+        val process = ProcessBuilder("ps", "-axo", "pid=,command=")
+            .withCliPath()
+            .start()
+
+        process.inputStream.bufferedReader()
+            .use { it.readLines() }
+            .map { it.trim() }
+            .filter { line ->
+                patterns.any { pattern ->
+                    line.contains(pattern, ignoreCase = true)
+                }
+            }
+            .mapNotNull { line ->
+                line.split(Regex("\\s+")).firstOrNull()
+            }
+            .filter { it.isNotBlank() && it.all(Char::isDigit) }
+            .distinct()
+    }.getOrElse { e ->
+        println("Failed to resolve process IDs for patterns ${patterns.joinToString()}: ${e.message}")
+        emptyList()
+    }
+}
+
+fun resolveOllamaRuntimePids(): List<String> {
+    return resolveProcessIdsByCommandPatterns(
+        listOf(
+            "ollama serve",
+            "ollama",
+            "llama-server",
+        )
+    )
 }

@@ -1,3 +1,6 @@
+group = "com.codingkinetics"
+version = "1.0.0-SNAPSHOT"
+
 plugins {
     // this is necessary to avoid the plugins to be loaded multiple times
     // in each subproject's classloader

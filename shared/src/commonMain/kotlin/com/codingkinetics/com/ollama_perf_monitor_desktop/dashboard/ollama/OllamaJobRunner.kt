@@ -38,4 +38,11 @@ interface OllamaJobRunner {
 
     /** Kills the Ollama server process and any related subprocesses. */
     fun cleanupRuntimeResources()
+
+    /**
+     * Absolute path of the file the Ollama server's stdout/stderr are redirected to. Defaults to
+     * `~/ollama_server.log`; implementations may override to match their actual redirect target.
+     */
+    fun getServerLogPath(): String =
+        java.io.File(System.getProperty("user.home"), "ollama_server.log").absolutePath
 }
