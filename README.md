@@ -109,6 +109,12 @@ so you can run it directly:
 java -jar desktopApp/build/libs/desktopApp-all.jar
 ```
 
+To inspect startup output without losing it to the GUI, pipe through `head`:
+
+```bash
+java -jar desktopApp/build/libs/desktopApp-all.jar 2>&1 | head -50
+```
+
 ### Publishing to Maven Local
 
 If you want to consume this project as a dependency in another Gradle build on the same machine,
@@ -132,6 +138,29 @@ dependencies {
 ```
 
 To make this available globally, publish to Maven Central or JitPack instead of `mavenLocal()`.
+
+## GitHub Release
+
+To attach the Shadow JAR to a GitHub release, use the GitHub CLI:
+
+1. Build the JAR:
+   ```bash
+   ./gradlew :desktopApp:shadowJar
+   ```
+
+2. Create a tag and GitHub release, then upload the JAR:
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+
+   gh release create v1.0.0 \
+     desktopApp/build/libs/desktopApp-all.jar \
+     --title "v1.0.0" \
+     --notes "Shadow JAR for desktopApp"
+   ```
+
+If you do not have `gh` installed, create the release under **Releases** on GitHub and drag-and-drop
+`desktopApp/build/libs/desktopApp-all.jar` into the **Attach binaries** box.
 
 ## Running tests
 
