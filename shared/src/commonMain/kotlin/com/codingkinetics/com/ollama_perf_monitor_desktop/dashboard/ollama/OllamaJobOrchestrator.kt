@@ -13,7 +13,7 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.TokenT
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
-import com.codingkinetics.com.ollama_perf_monitor_desktop.util.flatMap
+
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.runCommandIgnoringErrors
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxExecutable
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.tmuxSessionName
@@ -104,14 +104,43 @@ class OllamaJobOrchestrator(
         prompt: String,
         jobResult: OllamaJobResult,
         peakMetrics: OSMetrics,
-    ): Result<PerformanceMetrics> =
-        ragasEngine.calculateHallucinationScore(
-            prompt,
-            jobResult.generatedText,
-            peakMetrics,
-        ).flatMap { evalData ->
-            getPerformanceData(prompt, jobResult, evalData, peakMetrics)
+    ): Result<PerformanceMetrics> {
+        // The forensic evaluation (Groq/Ragas) is an optional, external-API step. It must NOT sit
+        // on the critical path of the performance metrics: when it is disabled (no GROQ_API_KEY),
+        // rate-limited, or otherwise fails, we still surface the collected timing/OS telemetry
+        // using a fallback evaluation score instead of dropping the whole scenario result. Dropping
+        // it would leave the benchmark report empty and render every aggregate as NaN / 0.
+        val evaluationResult = when (
+            val scoreResult = ragasEngine.calculateHallucinationScore(
+                prompt,
+                jobResult.generatedText,
+                peakMetrics,
+            )
+        ) {
+            is Result.Success -> scoreResult.data
+            is Result.Failure -> {
+                println(
+                    "Forensic evaluation unavailable (${scoreResult.exception.message}); " +
+                        "recording performance metrics with fallback scores.",
+                )
+                EVALUATION_UNAVAILABLE
+            }
         }
+
+        return getPerformanceData(prompt, jobResult, evaluationResult, peakMetrics)
+    }
+
+    /**
+     * Sentinel used when the forensic evaluation (Groq/Ragas) is unavailable or fails — e.g. no
+     * [GROQ_API_KEY], rate limiting, or network error. `-1.0` (outside the normal 0.0–1.0 range)
+     * clearly flags "not evaluated" without polluting the collected timing/OS telemetry, which is
+     * always preserved. Distinct from the `0.5` heuristic fallback the evaluator itself returns
+     * when Groq responds but yields no usable score.
+     */
+    private val EVALUATION_UNAVAILABLE = EvaluationResult(
+        faithfulnessScore = -1.0,
+        hallucinationIndex = -1.0,
+    )
 
     private fun getPerformanceData(
         prompt: String,

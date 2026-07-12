@@ -39,5 +39,8 @@ kotlin {
         implementation(kotlin("test"))
         implementation(libs.mockk)
         implementation(libs.ktor.client.mock)
+        implementation(libs.compose.ui.test)
+        implementation(libs.compose.ui.test.junit4)
+        implementation(libs.skiko.macos)
     }
 }
