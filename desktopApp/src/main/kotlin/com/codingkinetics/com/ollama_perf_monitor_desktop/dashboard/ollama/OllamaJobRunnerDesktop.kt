@@ -45,6 +45,12 @@ class OllamaJobRunnerDesktop(
 
     override fun getServerLogPath(): String = serverLogFile.absolutePath
 
+    private fun isRunningOnPi(): Boolean {
+        val arch = System.getProperty("os.arch").lowercase()
+        val os = System.getProperty("os.name").lowercase()
+        return (arch.contains("arm") || arch.contains("aarch64")) && os.contains("linux")
+    }
+
     override fun startOllamaServer() = try {
         killOllamaRuntimeProcesses()
         val userHome = System.getProperty("user.home")
@@ -61,6 +67,14 @@ class OllamaJobRunnerDesktop(
 
         builder.environment()["HOME"] = userHome
         builder.environment()["OLLAMA_DEBUG"] = "1"
+
+        if (isRunningOnPi()) {
+            builder.environment()["OLLAMA_NUM_PARALLEL"] = "1"
+            builder.environment()["OLLAMA_MAX_LOADED_MODELS"] = "1"
+        } else {
+            val threads = (Runtime.getRuntime().availableProcessors() - 1).coerceAtLeast(2)
+            builder.environment()["OLLAMA_NUM_THREADS"] = threads.toString()
+        }
 
         builder.directory(File(userHome))
 

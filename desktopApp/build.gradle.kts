@@ -26,7 +26,6 @@ dependencies {
     implementation(libs.ktor.cio)
     implementation(libs.ktor.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
-    implementation("com.github.netguru.compose-multiplatform-charts:charts-desktop:1.0.0-alpha03")
 
     implementation(libs.kotlin.test)
 }
