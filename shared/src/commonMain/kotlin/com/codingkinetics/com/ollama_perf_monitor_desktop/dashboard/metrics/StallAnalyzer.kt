@@ -4,22 +4,10 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.StallS
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.StallSummary
 
 /**
- * Analyzes a sampled time series for stall (thrashing) behaviour.
+ * Analyzes a sampled time series for stall behavior based on workload saturation.
  *
- * Stateless and pure, so a single instance can be shared as a singleton or
- * injected via constructor. The stall threshold is configurable to let callers
- * tune sensitivity without subclassing.
- *
- * Each sample below the threshold contributes its surrounding half-intervals of
- * time to [StallSummary.stalledTimeMillis] (trapezoidal time weighting), which
- * makes the estimate stable for uniformly sampled data and convergent with density
- * rather than dependent on raw sample count. Episodes are counted as transitions
- * from a working sample (>= threshold) into a stalled one.
- *
- * Returns a stable, empty [StallSummary] when fewer than two samples are provided
- * or the sampled span is non-positive.
- *
- * @param stallThreshold value at or above which the series is considered "working".
+ * This version isolates the active inference job by stripping out initial model-loading
+ * dead time, beginning evaluation only when the CPU first crosses the working threshold.
  */
 class StallAnalyzer(
     private val stallThreshold: Double = 20.0,
@@ -29,37 +17,60 @@ class StallAnalyzer(
             return StallSummary(0, 0, 0.0, 0, StallSeverity.STABLE)
         }
 
-        val sorted = points.sortedBy { it.first }
-        val totalTime = (sorted.last().first - sorted.first().first)
-        if (totalTime <= 0) {
+        // Sort chronologically
+        val sortedAll = points.sortedBy { it.first }
+
+        // LOCK ONTO ACTIVE JOB: Find the first index where the CPU actually wakes up and does work
+        val activeJobStartIndex = sortedAll.indexOfFirst { it.second >= stallThreshold }
+
+        // If the CPU never even hit the threshold, the job never actively ran
+        if (activeJobStartIndex == -1 || activeJobStartIndex >= sortedAll.size - 1) {
             return StallSummary(0, 0, 0.0, 0, StallSeverity.STABLE)
         }
 
-        var stalledTime = 0.0
+        // Slice the data so we ONLY evaluate from the first moment of active CPU onwards
+        val activeJobPoints = sortedAll.subList(activeJobStartIndex, sortedAll.size)
+
+        val totalActiveTime = (activeJobPoints.last().first - activeJobPoints.first().first)
+        if (totalActiveTime <= 0) {
+            return StallSummary(0, 0, 0.0, 0, StallSeverity.STABLE)
+        }
+
+        var totalDowntime = 0.0
         var episodes = 0
-        val n = sorted.size
-        for (i in sorted.indices) {
-            val (time, value) = sorted[i]
+        val n = activeJobPoints.size
+
+        for (i in activeJobPoints.indices) {
+            val (time, value) = activeJobPoints[i]
+
+            // Calculate exact downtime accumulation only within the active execution window
             if (value < stallThreshold) {
-                val halfBefore = if (i > 0) (time - sorted[i - 1].first) / 2.0 else 0.0
-                val halfAfter = if (i < n - 1) (sorted[i + 1].first - time) / 2.0 else 0.0
-                stalledTime += halfBefore + halfAfter
+                val halfBefore = if (i > 0) (time - activeJobPoints[i - 1].first) / 2.0 else 0.0
+                val halfAfter = if (i < n - 1) (activeJobPoints[i + 1].first - time) / 2.0 else 0.0
+                totalDowntime += (halfBefore + halfAfter)
             }
-            if (i < n - 1 && value >= stallThreshold && sorted[i + 1].second < stallThreshold) {
+
+            // Count a drop episode when transitioning from active work down to a stall state
+            if (i < n - 1 && value >= stallThreshold && activeJobPoints[i + 1].second < stallThreshold) {
                 episodes++
             }
         }
 
-        val stalledFraction = (stalledTime / totalTime).coerceIn(0.0, 1.0)
+        val totalActiveTimeSeconds = totalActiveTime / 1000.0
+        val dropFrequencyPerSecond = episodes / totalActiveTimeSeconds
+        val stalledFraction = (totalDowntime / totalActiveTime).coerceIn(0.0, 1.0)
+        val uptimeFraction = 1.0 - stalledFraction
+
+        // Classify metrics purely on the active processing window
         val severity = when {
-            stalledFraction >= 0.30 -> StallSeverity.SEVERE
-            stalledFraction >= 0.10 -> StallSeverity.VOLATILE
+            uptimeFraction < 0.85 && dropFrequencyPerSecond > 0.5 -> StallSeverity.SEVERE
+            uptimeFraction < 0.95 || dropFrequencyPerSecond > 0.2 -> StallSeverity.VOLATILE
             else -> StallSeverity.STABLE
         }
 
         return StallSummary(
-            stalledTimeMillis = stalledTime.toLong(),
-            totalTimeMillis = totalTime,
+            stalledTimeMillis = totalDowntime.toLong(),
+            totalTimeMillis = totalActiveTime,
             stalledFraction = stalledFraction,
             stallEpisodes = episodes,
             severity = severity,

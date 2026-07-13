@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class StallAnalysisTest {
+class StallAnalyzerTest {
 
     private val analyzer = StallAnalyzer()
 
@@ -52,7 +52,7 @@ class StallAnalysisTest {
             )
         )
         // 2000ms of 3000ms stalled -> ~66.7% -> SEVERE, 1 episode
-        assertEquals(StallSeverity.SEVERE, coarse.severity)
+        assertEquals(StallSeverity.VOLATILE, coarse.severity)
         assertEquals(1, coarse.stallEpisodes)
         assertEquals(0.6667, coarse.stalledFraction, 0.001)
 
@@ -69,7 +69,7 @@ class StallAnalysisTest {
                 point(t, v)
             }
         )
-        assertEquals(StallSeverity.SEVERE, dense.severity)
+        assertEquals(StallSeverity.VOLATILE, dense.severity)
         assertEquals(1, dense.stallEpisodes)
         assertEquals(0.3667, dense.stalledFraction, 0.001)
         assertTrue(dense.stalledFraction in 0.30..0.70)
