@@ -42,7 +42,9 @@ class StallAnalyzerTest {
     }
 
     @Test
-    fun sustainedStall_isSevereAndConvergesWithSamplingDensity() {
+    fun shortSustainedStall_isStableWhenJobFinishesFast() {
+        // A 66.7% duty cycle would look severe, but the run is only 3s long,
+        // so the <8s coercion keeps it STABLE (efficient fast job).
         val coarse = analyzer.analyze(
             listOf(
                 point(1000L, 90.0),
@@ -51,14 +53,11 @@ class StallAnalyzerTest {
                 point(4000L, 90.0),
             )
         )
-        // 2000ms of 3000ms stalled -> ~66.7% -> SEVERE, 1 episode
-        assertEquals(StallSeverity.VOLATILE, coarse.severity)
+        assertEquals(StallSeverity.STABLE, coarse.severity)
         assertEquals(1, coarse.stallEpisodes)
         assertEquals(0.6667, coarse.stalledFraction, 0.001)
 
-        // Same physical behaviour sampled 10x more densely. The trapezoidal estimate
-        // is not perfectly invariant, but it must stay SEVERE and remain a plausible
-        // duty cycle (far closer to reality than a naive per-sample average would be).
+        // Same physical behaviour sampled 10x more densely.
         val dense = analyzer.analyze(
             (0..30).map { i ->
                 val t = 1000L + i * 100L
@@ -69,14 +68,29 @@ class StallAnalyzerTest {
                 point(t, v)
             }
         )
-        assertEquals(StallSeverity.VOLATILE, dense.severity)
+        assertEquals(StallSeverity.STABLE, dense.severity)
         assertEquals(1, dense.stallEpisodes)
         assertEquals(0.3667, dense.stalledFraction, 0.001)
         assertTrue(dense.stalledFraction in 0.30..0.70)
     }
 
     @Test
-    fun intermittentStall_isVolatile() {
+    fun longFrequentStalls_isSevere() {
+        // 10s run alternating working/stall every 200ms -> ~2.5 drops/sec and
+        // a large stalled duty cycle: clears both SEVERE bars (and the 8s floor).
+        val long = (0..50).map { i ->
+            val t = 1000L + i * 200L
+            val v = if (i % 2 == 0) 90.0 else 5.0
+            point(t, v)
+        }
+        val summary = analyzer.analyze(long)
+        assertEquals(StallSeverity.SEVERE, summary.severity)
+        assertTrue(summary.stallEpisodes > 1)
+    }
+
+    @Test
+    fun intermittentStall_shortJob_isStable() {
+        // One brief dip over a 3s run: too fast to be "volatile".
         val summary = analyzer.analyze(
             listOf(
                 point(1000L, 90.0),
@@ -88,9 +102,27 @@ class StallAnalyzerTest {
                 point(4000L, 90.0),
             )
         )
-        assertEquals(StallSeverity.VOLATILE, summary.severity)
+        assertEquals(StallSeverity.STABLE, summary.severity)
         assertEquals(1, summary.stallEpisodes)
         assertEquals(0.1667, summary.stalledFraction, 0.001)
+    }
+
+    @Test
+    fun longModerateStall_isVolatile() {
+        // >8s run with a 20% duty cycle and only 1 drop: volatile, not coerced.
+        val summary = analyzer.analyze(
+            listOf(
+                point(1000L, 90.0),
+                point(3000L, 5.0),
+                point(5000L, 90.0),
+                point(7000L, 90.0),
+                point(9000L, 90.0),
+                point(11000L, 90.0),
+            )
+        )
+        assertEquals(StallSeverity.VOLATILE, summary.severity)
+        assertEquals(1, summary.stallEpisodes)
+        assertEquals(0.2, summary.stalledFraction, 0.001)
     }
 
     @Test

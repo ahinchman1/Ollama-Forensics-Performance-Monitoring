@@ -61,10 +61,15 @@ class StallAnalyzer(
         val stalledFraction = (totalDowntime / totalActiveTime).coerceIn(0.0, 1.0)
         val uptimeFraction = 1.0 - stalledFraction
 
-        // Classify metrics purely on the active processing window
         val severity = when {
-            uptimeFraction < 0.85 && dropFrequencyPerSecond > 0.5 -> StallSeverity.SEVERE
-            uptimeFraction < 0.95 || dropFrequencyPerSecond > 0.2 -> StallSeverity.VOLATILE
+            dropFrequencyPerSecond > 1.5 && stalledFraction > 0.25 -> StallSeverity.SEVERE
+            dropFrequencyPerSecond > 0.8 || stalledFraction > 0.15 -> {
+                if (totalActiveTimeSeconds < 8.0 || uptimeFraction > 0.87) {
+                    StallSeverity.STABLE
+                } else {
+                    StallSeverity.VOLATILE
+                }
+            }
             else -> StallSeverity.STABLE
         }
 

@@ -30,7 +30,7 @@ class TelemetryChartsTest {
     }
 
     @Test
-    fun cpuTimeSeriesChart_sustainedStall_displaysSevereAlert() {
+    fun cpuTimeSeriesChart_sustainedStall_displaysVolatileAlert() {
         val stalledData = listOf(
             CpuTimeSeriesSnapshot(timestampMillis = 1000L, cpuConsumption = 90.0, aggregateCpuConsumption = 90.0, temperature = 65, threadCount = 8),
             CpuTimeSeriesSnapshot(timestampMillis = 2000L, cpuConsumption = 5.0, aggregateCpuConsumption = 5.0, temperature = 42, threadCount = 4),
@@ -46,7 +46,7 @@ class TelemetryChartsTest {
 
         composeTestRule.onNodeWithText("CPU Consumption Over Time").assertIsDisplayed()
         composeTestRule.onNodeWithText("Bound Limits: 5.0% - 90.0%").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Stall: 66.7% of time · 1 episode(s) (Severe Stalls)").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Stall: 66.7% of time · 1 episode(s) (High Volatility)").assertIsDisplayed()
     }
 
     @Test
