@@ -5,6 +5,7 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.Perfor
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollama.OllamaJobOrchestrator
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.ForensicsEvaluator
 import com.codingkinetics.com.ollama_perf_monitor_desktop.benchmarking.ForensicsBenchmarkSuite
+import com.codingkinetics.com.ollama_perf_monitor_desktop.di.OLLAMA_MODEL
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.openFile
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
@@ -24,10 +25,10 @@ class DashboardViewModel(
     private val ollamaJobOrchestrator: OllamaJobOrchestrator,
     private val contextPool: CoroutineContextProvider = CoroutineContextProviderImpl(),
     private val metricsFormatter: PerformanceMetricsFormatter = PerformanceMetricsFormatter(),
+    private val ollamaModel: String = OLLAMA_MODEL,
 ) {
     private val _viewState = MutableStateFlow<DashboardViewState>(DashboardViewState.Idle)
     val viewState: StateFlow<DashboardViewState> = _viewState.asStateFlow()
-    private val ollamaModel = "llama3.2"
 
     companion object {
         const val MaxBenchmarkLogChars = 20_000
