@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class DashboardViewModel(
     private val scope: CoroutineScope,
@@ -158,7 +160,8 @@ class DashboardViewModel(
     }
 
     fun runBenchmark() {
-        val logFile = File(System.getProperty("user.home"), ".ollama-perf-monitor/logs/benchmark.log").apply {
+        val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+        val logFile = File(System.getProperty("user.home"), ".ollama-perf-monitor/logs/benchmark_$timestamp.log").apply {
             parentFile?.mkdirs()
         }
 
