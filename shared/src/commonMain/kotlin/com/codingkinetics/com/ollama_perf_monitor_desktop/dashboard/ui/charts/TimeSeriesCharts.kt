@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -138,7 +139,8 @@ fun TokenComparisonBarChart(
                 results.forEach { result ->
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.Bottom,
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
                     ) {
                         Box(
                             modifier = Modifier
@@ -146,9 +148,9 @@ fun TokenComparisonBarChart(
                                 .height((result.generatedTokens.toDouble() / maxTokens * 80).dp)
                                 .background(
                                     when {
-                                        result.hallucinationIndex > 0.5 -> MaterialTheme.colorScheme.error
-                                        result.hallucinationIndex > 0.25 -> MaterialTheme.colorScheme.secondary
-                                        else -> MaterialTheme.colorScheme.tertiary
+                                        result.generatedTokens <= 300 -> MaterialTheme.colorScheme.tertiary
+                                        result.generatedTokens in 301..600 -> MaterialTheme.colorScheme.secondary
+                                        else -> MaterialTheme.colorScheme.error
                                     }
                                 )
                         )

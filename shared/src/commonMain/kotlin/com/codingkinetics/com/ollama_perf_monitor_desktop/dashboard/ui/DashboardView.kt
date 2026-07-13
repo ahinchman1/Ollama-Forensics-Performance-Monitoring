@@ -58,9 +58,9 @@ fun DashboardView(
         else -> "System Offline - Transitioning to Idle state."
     }
 
-    val currentGpuContent = when (val state = uiState) {
-        is DashboardViewState.CompletedJob -> state.gpuPanel
-        is DashboardViewState.ActiveJob -> state.gpuPanel
+    val currentScenarioContent = when (val state = uiState) {
+        is DashboardViewState.CompletedJob -> state.currentScenario ?: "No scenario running"
+        is DashboardViewState.ActiveJob -> state.currentScenario ?: "No scenario running"
         is DashboardViewState.PipelineFailure -> "Diagnostics:\n${state.installHint}"
         else -> "System Offline - Transitioning to Idle state."
     }
@@ -153,8 +153,8 @@ fun DashboardView(
                 )
 
                 ShellPanel(
-                    title = "GPU / System",
-                    content = currentGpuContent,
+                    title = "Scenario",
+                    content = currentScenarioContent,
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                 )
             }

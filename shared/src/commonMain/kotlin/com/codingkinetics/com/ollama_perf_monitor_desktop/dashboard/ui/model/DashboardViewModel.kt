@@ -59,7 +59,7 @@ class DashboardViewModel(
         _viewState.value = DashboardViewState.ActiveJob(
             statusMessage = "Starting dashboard...",
             metricsPanel = "Starting metrics panel...",
-            gpuPanel = "Starting GPU / system panel...",
+            currentScenario = "Live Pipeline",
             essayText = "Preparing Ollama essay job..."
         )
 
@@ -168,7 +168,7 @@ class DashboardViewModel(
         _viewState.value = DashboardViewState.ActiveJob(
             statusMessage = "Starting benchmark suite...",
             metricsPanel = "Initializing benchmark...",
-            gpuPanel = "System metrics initializing...",
+            currentScenario = null,
             essayText = "Preparing benchmark scenarios...",
         )
 
@@ -188,7 +188,8 @@ class DashboardViewModel(
                                     essayText = appendBoundedLog(
                                         current.essayText,
                                         separator + status,
-                                    )
+                                    ),
+                                    currentScenario = status,
                                 )
                             } else current
                         }
@@ -233,13 +234,11 @@ class DashboardViewModel(
 
     suspend fun refreshMonitoringPanels() {
         val metrics = ollamaJobOrchestrator.captureTmuxPane("${tmuxSessionName}:0.0")
-        val gpu = ollamaJobOrchestrator.captureTmuxPane("${tmuxSessionName}:0.1")
-
 
         withContext(contextPool.mainDispatcher) {
             _viewState.update { currentState ->
                 if (currentState is DashboardViewState.ActiveJob) {
-                    currentState.copy(metricsPanel = metrics, gpuPanel = gpu)
+                    currentState.copy(metricsPanel = metrics)
                 } else currentState
             }
         }
@@ -274,7 +273,7 @@ class DashboardViewModel(
                 DashboardViewState.CompletedJob(
                     statusMessage = "Job finished successfully.",
                     metricsPanel = processedMetricsLayout,
-                    gpuPanel = systemsPanelSummary,
+                    currentScenario = "Completed",
                     completedData = metrics,
                     essayText = currentState.essayText,
                 )

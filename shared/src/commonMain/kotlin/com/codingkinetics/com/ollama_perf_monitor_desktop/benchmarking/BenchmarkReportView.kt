@@ -25,7 +25,7 @@ fun BenchmarkReportView(report: BenchmarkSuiteReport) {
             Text(
                 text = "Ollama Forensics Performance Report",
                 style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
         }
@@ -41,7 +41,7 @@ fun BenchmarkReportView(report: BenchmarkSuiteReport) {
                 text = "Time-Series Forensics",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.onBackground,
             )
         }
 
@@ -51,7 +51,7 @@ fun BenchmarkReportView(report: BenchmarkSuiteReport) {
                     text = "Scenario ${result.scenarioId}: ${result.scenarioName}",
                     style = MaterialTheme.typography.labelMedium,
                     modifier = Modifier.padding(bottom = 4.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = MaterialTheme.colorScheme.onBackground,
                 )
                 CpuTimeSeriesChart(
                     snapshots = result.timeSeries.cpuSnapshots,
@@ -65,7 +65,7 @@ fun BenchmarkReportView(report: BenchmarkSuiteReport) {
                 text = "Token Expenditure by Scenario",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.onBackground,
             )
         }
 
@@ -88,7 +88,7 @@ private fun PerformanceSummaryCard(report: BenchmarkSuiteReport) {
             Text(
                 text = "Core Engine Velocity Baseline",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Text("Avg Ingestion Speed: ${String.format("%.1f", report.averagePromptIngestionSpeed)} t/s")
             Text("Avg Generation Speed: ${String.format("%.2f", report.averageTokenGenerationSpeed)} t/s")
@@ -97,7 +97,7 @@ private fun PerformanceSummaryCard(report: BenchmarkSuiteReport) {
             Text(
                 text = "Hardware Strain Profile",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Text("Peak CPU (ps): ${report.peakCpuConsumption}%")
             Text("Peak CPU (btop): ${String.format("%.1f", report.peakBtopCpuConsumption)}%")

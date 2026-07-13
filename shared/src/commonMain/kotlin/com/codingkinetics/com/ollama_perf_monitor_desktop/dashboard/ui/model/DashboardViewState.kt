@@ -12,7 +12,7 @@ sealed interface DashboardViewState {
     data class ActiveJob(
         val statusMessage: String = "Pipeline is starting...",
         val metricsPanel: String = "Initializing btop...",
-        val gpuPanel: String = "Initializing system metrics...",
+        val currentScenario: String? = null,
         val essayText: String = "Preparing Ollama pre-fill..."
     ) : DashboardViewState
 
@@ -40,7 +40,7 @@ sealed interface DashboardViewState {
     data class CompletedJob(
         val statusMessage: String,
         val metricsPanel: String,
-        val gpuPanel: String,
+        val currentScenario: String? = null,
         val essayText: String,
         val completedData: PerformanceMetrics,
     ): DashboardViewState
