@@ -17,7 +17,8 @@ fun App(
     ollamaJobOrchestrator: OllamaJobOrchestrator,
     appSdkResources: AppSdkResources,
 ) {
-    OllamaForensicsTheme {
+    var isDarkTheme by remember { mutableStateOf(false) }
+    OllamaForensicsTheme(darkTheme = isDarkTheme) {
         val appScope = rememberCoroutineScope()
         val orchestrator = remember { ollamaJobOrchestrator }
         val viewModel = remember { DashboardViewModel(appScope, orchestrator) }
@@ -36,7 +37,11 @@ fun App(
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            DashboardView(viewModel)
+            DashboardView(
+                viewModel = viewModel,
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { isDarkTheme = !isDarkTheme },
+            )
         }
     }
 }

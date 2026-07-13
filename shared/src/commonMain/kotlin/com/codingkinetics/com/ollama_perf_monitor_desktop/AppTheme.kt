@@ -2,6 +2,7 @@ package com.codingkinetics.com.ollama_perf_monitor_desktop
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
@@ -24,12 +25,33 @@ private val ForensicsDarkColorScheme = darkColorScheme(
     onTertiary = Color(0xFF003820),
 )
 
+private val ForensicsLightColorScheme = lightColorScheme(
+    primary = Color(0xFF1D628B),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFC4E7FF),
+    onPrimaryContainer = Color(0xFF001E30),
+    secondary = Color(0xFF8A5100),
+    onSecondary = Color(0xFFFFFFFF),
+    background = Color(0xFFF8F9FA),
+    onBackground = Color(0xFF1A1C1E),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF1A1C1E),
+    surfaceVariant = Color(0xFFDFE3E7),
+    onSurfaceVariant = Color(0xFF43474B),
+    error = Color(0xFFBA1A1A),
+    onError = Color(0xFFFFFFFF),
+    tertiary = Color(0xFF006E38),
+    onTertiary = Color(0xFFFFFFFF)
+)
+
 @Composable
 fun OllamaForensicsTheme(
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit,
 ) {
+    val colorScheme = if (darkTheme) ForensicsDarkColorScheme else ForensicsLightColorScheme
     MaterialTheme(
-        colorScheme = ForensicsDarkColorScheme,
+        colorScheme = colorScheme,
         content = content,
     )
 }

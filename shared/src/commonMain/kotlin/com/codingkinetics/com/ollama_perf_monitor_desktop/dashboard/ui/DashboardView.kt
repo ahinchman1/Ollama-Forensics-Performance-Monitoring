@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.codingkinetics.com.ollama_perf_monitor_desktop.benchmarking.BenchmarkReportView
@@ -25,7 +26,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
 @Composable
-fun DashboardView(viewModel: DashboardViewModel) {
+fun DashboardView(
+    viewModel: DashboardViewModel,
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {},
+) {
     val uiState by viewModel.viewState.collectAsState()
 
     LaunchedEffect(uiState is DashboardViewState.ActiveJob) {
@@ -67,7 +72,11 @@ fun DashboardView(viewModel: DashboardViewModel) {
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Button(
                 onClick = { viewModel.startPipeline(onEssayChunkReceived = { chunk -> print(chunk) }) },
                 enabled = uiState is DashboardViewState.Idle,
@@ -85,6 +94,10 @@ fun DashboardView(viewModel: DashboardViewModel) {
                 enabled = uiState is DashboardViewState.Idle,
             ) {
                 Text("Run Benchmark")
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Button(onClick = onToggleTheme) {
+                Text(if (isDarkTheme) "Settings (Dark)" else "Settings (Light)")
             }
         }
 
