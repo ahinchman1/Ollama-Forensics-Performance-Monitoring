@@ -45,6 +45,12 @@ class OllamaJobRunnerDesktop(
 
     override fun getServerLogPath(): String = serverLogFile.absolutePath
 
+    private fun isRunningOnPi(): Boolean {
+        val arch = System.getProperty("os.arch").lowercase()
+        val os = System.getProperty("os.name").lowercase()
+        return (arch.contains("arm") || arch.contains("aarch64")) && os.contains("linux")
+    }
+
     override fun startOllamaServer() = try {
         killOllamaRuntimeProcesses()
         val userHome = System.getProperty("user.home")

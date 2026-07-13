@@ -17,7 +17,7 @@ class PerformanceMetricsMapperTest {
         val prompt = "Translate hello to french"
 
         val completedData = OllamaResponseCompletedData(
-            model = "llama3.2",
+            model = "llama3.2:1b",
             createdAt = "2024-01-01T00:00:00Z",
             response = "",
             done = true,

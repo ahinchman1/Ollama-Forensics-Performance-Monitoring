@@ -5,6 +5,7 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.Perfor
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ollama.OllamaJobOrchestrator
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.ragas.ForensicsEvaluator
 import com.codingkinetics.com.ollama_perf_monitor_desktop.benchmarking.ForensicsBenchmarkSuite
+import com.codingkinetics.com.ollama_perf_monitor_desktop.di.OLLAMA_MODEL
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.openFile
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
@@ -18,16 +19,18 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class DashboardViewModel(
     private val scope: CoroutineScope,
     private val ollamaJobOrchestrator: OllamaJobOrchestrator,
     private val contextPool: CoroutineContextProvider = CoroutineContextProviderImpl(),
     private val metricsFormatter: PerformanceMetricsFormatter = PerformanceMetricsFormatter(),
+    private val ollamaModel: String = OLLAMA_MODEL,
 ) {
     private val _viewState = MutableStateFlow<DashboardViewState>(DashboardViewState.Idle)
     val viewState: StateFlow<DashboardViewState> = _viewState.asStateFlow()
-    private val ollamaModel = "llama3.2"
 
     companion object {
         const val MaxBenchmarkLogChars = 20_000
@@ -157,7 +160,8 @@ class DashboardViewModel(
     }
 
     fun runBenchmark() {
-        val logFile = File(System.getProperty("user.home"), ".ollama-perf-monitor/logs/benchmark.log").apply {
+        val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+        val logFile = File(System.getProperty("user.home"), ".ollama-perf-monitor/logs/benchmark_$timestamp.log").apply {
             parentFile?.mkdirs()
         }
 

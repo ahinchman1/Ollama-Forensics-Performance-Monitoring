@@ -6,6 +6,7 @@ import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.OSMetr
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuTimeSeriesSnapshot
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.TokenTimeSeriesSnapshot
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.ScenarioTimeSeries
+import com.codingkinetics.com.ollama_perf_monitor_desktop.di.OLLAMA_MODEL
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProvider
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.CoroutineContextProviderImpl
 import com.codingkinetics.com.ollama_perf_monitor_desktop.util.Result
@@ -28,11 +29,11 @@ import java.util.Locale
  * the Markdown report is written there on the IO dispatcher.
  *
  * @param orchestrator owns the Ollama server, metrics dashboard, and evaluation lifecycle.
- * @param model Ollama model used for every scenario (e.g. `llama3.2`).
+ * @param model Ollama model used for every scenario.
  */
 class ForensicsBenchmarkSuite(
     private val orchestrator: OllamaJobOrchestrator,
-    private val model: String = "llama3.2",
+    private val model: String = OLLAMA_MODEL,
     private val coroutineContextProvider: CoroutineContextProvider = CoroutineContextProviderImpl(),
 ) {
 

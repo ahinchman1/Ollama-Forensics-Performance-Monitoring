@@ -45,6 +45,37 @@ The app shells out to these at runtime, so they must be on your `PATH`:
 > **OS support:** macOS and Linux are supported. The tooling is Unix-specific — Windows is not
 > supported as-is.
 
+### Quick setup
+
+The app shells out to `ollama`, `tmux`, and `btop` at runtime. Install them before running.
+
+```bash
+# macOS
+bash setup-mac.sh
+
+# Raspberry Pi
+sudo bash setup-pi.sh
+```
+
+The scripts install dependencies and pull the default `llama3.2:1b` model.
+
+### tmux troubleshooting (Raspberry Pi)
+
+If `tmux` fails on a Pi, try these fixes:
+
+```bash
+# 1) Not installed
+sudo apt install tmux
+
+# 2) Stale socket left behind by a crash
+rm -rf /tmp/tmux-*
+tmux new
+
+# 3) Locale error (tmux: invalid LC_ALL, LC_CTYPE or LANG)
+sudo dpkg-reconfigure locales
+# Select en_US.UTF-8 (or your preferred locale) and set it as default
+```
+
 ### Forensic evaluation (optional)
 
 The faithfulness/hallucination scoring calls the Groq API. It is **optional**:
