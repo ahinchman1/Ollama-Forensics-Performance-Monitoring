@@ -30,45 +30,50 @@ class TelemetryChartsTest {
     }
 
     @Test
-    fun cpuTimeSeriesChart_calculatesSevereDelta_displaysRedAlert() {
-        val highVarianceData = listOf(
-            CpuTimeSeriesSnapshot(timestampMillis = 1000L, cpuConsumption = 5.0, aggregateCpuConsumption = 5.0, temperature = 40, threadCount = 4),
-            CpuTimeSeriesSnapshot(timestampMillis = 2000L, cpuConsumption = 95.0, aggregateCpuConsumption = 95.0, temperature = 65, threadCount = 8),
-            CpuTimeSeriesSnapshot(timestampMillis = 3000L, cpuConsumption = 10.0, aggregateCpuConsumption = 10.0, temperature = 42, threadCount = 4)
+    fun cpuTimeSeriesChart_sustainedStall_displaysSevereAlert() {
+        val stalledData = listOf(
+            CpuTimeSeriesSnapshot(timestampMillis = 1000L, cpuConsumption = 90.0, aggregateCpuConsumption = 90.0, temperature = 65, threadCount = 8),
+            CpuTimeSeriesSnapshot(timestampMillis = 2000L, cpuConsumption = 5.0, aggregateCpuConsumption = 5.0, temperature = 42, threadCount = 4),
+            CpuTimeSeriesSnapshot(timestampMillis = 3000L, cpuConsumption = 5.0, aggregateCpuConsumption = 5.0, temperature = 42, threadCount = 4),
+            CpuTimeSeriesSnapshot(timestampMillis = 4000L, cpuConsumption = 90.0, aggregateCpuConsumption = 90.0, temperature = 65, threadCount = 8)
         )
 
         composeTestRule.setContent {
             MaterialTheme {
-                CpuTimeSeriesChart(snapshots = highVarianceData)
+                CpuTimeSeriesChart(snapshots = stalledData)
             }
         }
 
         composeTestRule.onNodeWithText("CPU Consumption Over Time").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Bound Limits: 5.0% - 95.0%").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Δ: 87.5% (Severe Thrashing)").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Bound Limits: 5.0% - 90.0%").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Stall: 66.7% of time · 1 episode(s) (Severe Stalls)").assertIsDisplayed()
     }
 
     @Test
-    fun cpuTimeSeriesChart_calculatesTolerableDelta_displaysYellowAlert() {
-        val midVarianceData = listOf(
-            CpuTimeSeriesSnapshot(timestampMillis = 1000L, cpuConsumption = 40.0, aggregateCpuConsumption = 40.0, temperature = 50, threadCount = 6),
-            CpuTimeSeriesSnapshot(timestampMillis = 2000L, cpuConsumption = 56.0, aggregateCpuConsumption = 56.0, temperature = 58, threadCount = 6),
-            CpuTimeSeriesSnapshot(timestampMillis = 3000L, cpuConsumption = 48.0, aggregateCpuConsumption = 48.0, temperature = 52, threadCount = 6)
+    fun cpuTimeSeriesChart_intermittentStall_displaysVolatileAlert() {
+        val intermittentData = listOf(
+            CpuTimeSeriesSnapshot(timestampMillis = 1000L, cpuConsumption = 90.0, aggregateCpuConsumption = 90.0, temperature = 65, threadCount = 8),
+            CpuTimeSeriesSnapshot(timestampMillis = 1500L, cpuConsumption = 5.0, aggregateCpuConsumption = 5.0, temperature = 42, threadCount = 4),
+            CpuTimeSeriesSnapshot(timestampMillis = 2000L, cpuConsumption = 90.0, aggregateCpuConsumption = 90.0, temperature = 65, threadCount = 8),
+            CpuTimeSeriesSnapshot(timestampMillis = 2500L, cpuConsumption = 90.0, aggregateCpuConsumption = 90.0, temperature = 65, threadCount = 8),
+            CpuTimeSeriesSnapshot(timestampMillis = 3000L, cpuConsumption = 90.0, aggregateCpuConsumption = 90.0, temperature = 65, threadCount = 8),
+            CpuTimeSeriesSnapshot(timestampMillis = 3500L, cpuConsumption = 90.0, aggregateCpuConsumption = 90.0, temperature = 65, threadCount = 8),
+            CpuTimeSeriesSnapshot(timestampMillis = 4000L, cpuConsumption = 90.0, aggregateCpuConsumption = 90.0, temperature = 65, threadCount = 8)
         )
 
         composeTestRule.setContent {
             MaterialTheme {
-                CpuTimeSeriesChart(snapshots = midVarianceData)
+                CpuTimeSeriesChart(snapshots = intermittentData)
             }
         }
 
         composeTestRule.onNodeWithText("CPU Consumption Over Time").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Bound Limits: 40.0% - 56.0%").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Δ: 12.0% (High Volatility)").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Bound Limits: 5.0% - 90.0%").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Stall: 16.7% of time · 1 episode(s) (High Volatility)").assertIsDisplayed()
     }
 
     @Test
-    fun cpuTimeSeriesChart_calculatesFlatDelta_displaysGreenAlert() {
+    fun cpuTimeSeriesChart_stableExecution_displaysGreenAlert() {
         val stableData = listOf(
             CpuTimeSeriesSnapshot(timestampMillis = 1000L, cpuConsumption = 60.0, aggregateCpuConsumption = 60.0, temperature = 55, threadCount = 4),
             CpuTimeSeriesSnapshot(timestampMillis = 2000L, cpuConsumption = 65.0, aggregateCpuConsumption = 65.0, temperature = 56, threadCount = 4),
@@ -83,6 +88,6 @@ class TelemetryChartsTest {
 
         composeTestRule.onNodeWithText("CPU Consumption Over Time").assertIsDisplayed()
         composeTestRule.onNodeWithText("Bound Limits: 60.0% - 65.0%").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Δ: 4.0% (Stable Execution)").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Stall: 0.0% of time · 0 episode(s) (Stable Execution)").assertIsDisplayed()
     }
 }

@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,21 +27,57 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.codingkinetics.com.ollama_perf_monitor_desktop.benchmarking.BenchmarkScenarioResult
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.metrics.StallAnalyzer
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.CpuTimeSeriesSnapshot
+import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.StallSeverity
 import com.codingkinetics.com.ollama_perf_monitor_desktop.dashboard.model.TokenTimeSeriesSnapshot
 
 @Composable
 fun CpuTimeSeriesChart(
     snapshots: List<CpuTimeSeriesSnapshot>,
     modifier: Modifier = Modifier,
+    analyzer: StallAnalyzer = StallAnalyzer(),
 ) {
+    val dataPoints = snapshots.map { it.timestampMillis to it.cpuConsumption }
+    val valueFormatter = { v: Double -> "%.1f%%".format(v) }
+    val summary = analyzer.analyze(dataPoints)
+
     TimeSeriesLineChart(
         title = "CPU Consumption Over Time",
-        dataPoints = snapshots.map { it.timestampMillis to it.cpuConsumption },
-        valueFormatter = { "%.1f%%".format(it) },
+        dataPoints = dataPoints,
+        valueFormatter = valueFormatter,
         lineColor = Color(0xFFEF5350),
         modifier = modifier,
         isPercentAxis = true,
+        footer = {
+            val values = dataPoints.map { it.second }
+            val minValue = values.minOrNull() ?: 0.0
+            val maxValue = values.maxOrNull() ?: 1.0
+
+            val (statusColor, statusText) = when (summary.severity) {
+                StallSeverity.SEVERE -> MaterialTheme.colorScheme.error to "Severe Stalls"
+                StallSeverity.VOLATILE -> Color(0xFFFFB300) to "High Volatility"
+                StallSeverity.STABLE -> Color(0xFF4CAF50) to "Stable Execution"
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Bound Limits: ${valueFormatter(minValue)} - ${valueFormatter(maxValue)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = "Stall: %.1f%% of time · %d episode(s) (%s)".format(
+                    summary.stalledFraction * 100.0,
+                    summary.stallEpisodes,
+                    statusText,
+                ),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                ),
+                color = statusColor,
+            )
+        },
     )
 }
 
@@ -50,13 +87,29 @@ fun TokenExpenditureChart(
     modifier: Modifier = Modifier,
 ) {
     val dataPoints = snapshots.map { it.timestampMillis to it.cumulativeGeneratedTokens.toDouble() }
+    val valueFormatter = { v: Double -> "%.0f".format(v) }
+    val valueLabel = "Tokens"
+
     TimeSeriesLineChart(
         title = "Token Expenditure Over Time",
         dataPoints = dataPoints,
-        valueFormatter = { "%.0f".format(it) },
+        valueFormatter = valueFormatter,
         lineColor = Color(0xFF66BB6A),
         valueLabel = "Tokens",
         modifier = modifier,
+        footer = {
+            val values = dataPoints.map { it.second }
+            val minValue = values.minOrNull() ?: 0.0
+            val maxValue = values.maxOrNull() ?: 1.0
+
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Bound Limits: ${valueFormatter(minValue)} - ${valueFormatter(maxValue)}" +
+                        if (valueLabel.isNotEmpty()) " $valueLabel" else "",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
     )
 }
 
@@ -125,7 +178,8 @@ private fun TimeSeriesLineChart(
     modifier: Modifier = Modifier,
     valueLabel: String = "",
     yAxisRange: ClosedFloatingPointRange<Double>? = null,
-    isPercentAxis: Boolean = false
+    isPercentAxis: Boolean = false,
+    footer: @Composable ColumnScope.() -> Unit = {},
 ) {
     val textMeasurer = rememberTextMeasurer()
 
@@ -285,7 +339,7 @@ private fun TimeSeriesLineChart(
                             strokeWidth = 1.5.dp.toPx(),
                         )
 
-                        // FIXED: Timeline labels ("0s" and "96.8s") are drawn inside the Canvas, precisely aligned with the X-Axis endpoints
+                        // FIXED: Timeline labels are drawn inside the Canvas, precisely aligned with the X-Axis endpoints
                         val zeroLabel = textMeasurer.measure(text = "0s", style = labelStyle)
                         drawText(
                             textLayoutResult = zeroLabel,
@@ -334,38 +388,7 @@ private fun TimeSeriesLineChart(
                 }
             }
 
-            if (dataPoints.size >= 2) {
-                val values = dataPoints.map { it.second }
-                val minValue = yAxisRange?.start ?: values.minOrNull() ?: 0.0
-                val maxValue = yAxisRange?.endInclusive ?: values.maxOrNull() ?: 1.0
-
-                // 1. calculate the local delta (average absolute jump from point to point)
-                val successiveJumps = values.zipWithNext { a, b -> kotlin.math.abs(a - b) }
-                val localDelta = if (successiveJumps.isNotEmpty()) successiveJumps.average() else 0.0
-
-                // 2. classify based on how chaotic the local data points are
-                val (statusColor, statusText) = when {
-                    localDelta > 20.0 -> MaterialTheme.colorScheme.error to "Severe Thrashing"
-                    localDelta > 8.0  -> Color(0xFFFFB300) to "High Volatility"
-                    else -> Color(0xFF4CAF50) to "Stable Execution"
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "Bound Limits: ${valueFormatter(minValue)} - ${valueFormatter(maxValue)}" +
-                            if (valueLabel.isNotEmpty()) " $valueLabel" else "",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-
-                Text(
-                    text = "Δ: %.1f%% (%s)".format(localDelta, statusText),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                    ),
-                    color = statusColor
-                )
-            }
+            footer()
         }
     }
 }
